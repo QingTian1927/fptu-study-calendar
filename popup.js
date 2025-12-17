@@ -38,12 +38,34 @@ function calculateEndDate(startDate) {
 async function initPopup() {
   // Set i18n text
   document.getElementById('extensionName').textContent = getMessage('extensionName');
+  document.getElementById('headerSubtitle').textContent = getMessage('popupSubtitle');
+  document.getElementById('sectionDateRange').textContent = getMessage('sectionDateRange');
   document.getElementById('startDateLabel').textContent = getMessage('startDateLabel');
   document.getElementById('endDateLabel').textContent = getMessage('endDateLabel');
   document.getElementById('waitTimeLabel').textContent = getMessage('waitTimeLabel');
-  document.getElementById('scrapeButton').textContent = getMessage('scrapeButton');
-  document.getElementById('exportButton').textContent = getMessage('exportButton');
+  document.getElementById('advancedSettingsText').textContent = getMessage('advancedSettings');
+  document.getElementById('scrapeButtonText').textContent = getMessage('scrapeButton');
+  document.getElementById('previewButtonText').textContent = getMessage('previewButton');
+  document.getElementById('exportButtonText').textContent = getMessage('exportButton');
   document.getElementById('progress').textContent = getMessage('progressDefault');
+  
+  // Set page title
+  document.title = getMessage('popupTitle');
+  
+  // Initialize accordion
+  const accordionHeader = document.getElementById('accordionHeader');
+  const accordionContent = document.getElementById('accordionContent');
+  
+  accordionHeader.addEventListener('click', () => {
+    const isActive = accordionHeader.classList.contains('active');
+    if (isActive) {
+      accordionHeader.classList.remove('active');
+      accordionContent.classList.remove('active');
+    } else {
+      accordionHeader.classList.add('active');
+      accordionContent.classList.add('active');
+    }
+  });
 
   // Load saved settings
   const result = await chrome.storage.local.get(['waitTime', 'startDate', 'endDate']);
@@ -138,12 +160,12 @@ async function initPopup() {
     const exportButton = document.getElementById('exportButton');
     scrapeButton.disabled = true;
     const progress = document.getElementById('progress');
-    progress.className = 'progress';
-    progress.textContent = 'Đang khởi tạo...';
+    progress.className = 'progress loading';
+    progress.textContent = getMessage('progressInitializing');
 
     try {
       // Send message to background script
-      progress.textContent = 'Đang gửi yêu cầu...';
+      progress.textContent = getMessage('progressSending');
       
       const response = await new Promise((resolve, reject) => {
         // Set timeout
@@ -196,7 +218,7 @@ async function initPopup() {
           progress.textContent = getMessage('progressDefault');
         }, 5000);
       } else {
-        let errorMsg = response.error || 'Lỗi không xác định';
+        let errorMsg = response.error || getMessage('errorUnknown');
         if (errorMsg === 'NOT_LOGGED_IN') {
           errorMsg = getMessage('errorNotLoggedIn');
         } else if (errorMsg === 'NAVIGATION_FAILED') {
@@ -206,7 +228,7 @@ async function initPopup() {
       }
     } catch (error) {
       progress.className = 'progress error';
-      progress.textContent = `Lỗi: ${error.message}`;
+      progress.textContent = `${getMessage('errorPrefix')} ${error.message}`;
       console.error('Scraping error:', error);
     } finally {
       scrapeButton.disabled = false;
@@ -239,7 +261,7 @@ async function initPopup() {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'progressUpdate') {
       const progress = document.getElementById('progress');
-      progress.className = 'progress';
+      progress.className = 'progress loading';
       progress.textContent = getMessage('progressScraping', [message.currentWeek, message.totalWeeks]);
     } else if (message.action === 'scrapingComplete') {
       // This is handled in the main try/catch, but we can also handle it here if needed

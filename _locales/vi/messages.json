@@ -11,21 +11,37 @@
     "message": "FPTU Study Calendar Exporter",
     "description": "Tiêu đề popup"
   },
+  "popupSubtitle": {
+    "message": "Xuất lịch học của bạn",
+    "description": "Phụ đề popup"
+  },
+  "sectionDateRange": {
+    "message": "Khoảng thời gian",
+    "description": "Tiêu đề section khoảng thời gian"
+  },
   "startDateLabel": {
-    "message": "Ngày bắt đầu:",
+    "message": "Ngày bắt đầu",
     "description": "Nhãn ngày bắt đầu"
   },
   "endDateLabel": {
-    "message": "Ngày kết thúc:",
+    "message": "Ngày kết thúc",
     "description": "Nhãn ngày kết thúc"
   },
   "waitTimeLabel": {
-    "message": "Thời gian chờ (ms):",
+    "message": "Thời gian chờ (ms)",
     "description": "Nhãn thời gian chờ"
+  },
+  "advancedSettings": {
+    "message": "Cài đặt nâng cao",
+    "description": "Tiêu đề cài đặt nâng cao"
   },
   "scrapeButton": {
     "message": "Bắt đầu trích xuất",
     "description": "Nút bắt đầu trích xuất"
+  },
+  "previewButton": {
+    "message": "Xem lịch học",
+    "description": "Nút xem kết quả"
   },
   "exportButton": {
     "message": "Xuất file .ics",
@@ -34,6 +50,14 @@
   "progressDefault": {
     "message": "Sẵn sàng",
     "description": "Trạng thái mặc định"
+  },
+  "progressInitializing": {
+    "message": "Đang khởi tạo...",
+    "description": "Trạng thái đang khởi tạo"
+  },
+  "progressSending": {
+    "message": "Đang gửi yêu cầu...",
+    "description": "Trạng thái đang gửi yêu cầu"
   },
   "progressScraping": {
     "message": "Đang trích xuất tuần $WEEK$/$TOTAL$...",
@@ -53,6 +77,10 @@
     "message": "Trích xuất thành công!",
     "description": "Thông báo thành công"
   },
+  "errorPrefix": {
+    "message": "Lỗi:",
+    "description": "Tiền tố thông báo lỗi"
+  },
   "errorNotLoggedIn": {
     "message": "Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.",
     "description": "Lỗi chưa đăng nhập"
@@ -60,6 +88,26 @@
   "errorNavigation": {
     "message": "Không thể điều hướng đến trang lịch học. Vui lòng thử lại.",
     "description": "Lỗi điều hướng"
+  },
+  "errorDateRequired": {
+    "message": "Vui lòng chọn ngày bắt đầu và ngày kết thúc",
+    "description": "Lỗi thiếu ngày"
+  },
+  "errorDateOrder": {
+    "message": "Ngày bắt đầu phải trước ngày kết thúc",
+    "description": "Lỗi thứ tự ngày"
+  },
+  "confirmReplaceData": {
+    "message": "Đã có dữ liệu lớp học được lưu trữ.\\n\\nNhấn OK để thay thế tất cả dữ liệu cũ.\\nNhấn Cancel để hợp nhất với dữ liệu hiện có.",
+    "description": "Xác nhận thay thế dữ liệu"
+  },
+  "exportNotImplemented": {
+    "message": "Tính năng xuất file .ics sẽ được triển khai trong phiên bản tiếp theo",
+    "description": "Thông báo tính năng chưa có"
+  },
+  "errorUnknown": {
+    "message": "Lỗi không xác định",
+    "description": "Lỗi không xác định"
   }
 }
 

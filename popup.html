@@ -3,8 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FPTU Study Calendar Exporter</title>
+  <title data-i18n="popupTitle">FPTU Study Calendar Exporter</title>
   <style>
+    /* ========================================
+       DESIGN SYSTEM - CSS VARIABLES
+       ======================================== */
+    
+    :root {
+      /* Neutral Color Palette */
+      --color-gray-50: #fafafa;
+      --color-gray-100: #f5f5f5;
+      --color-gray-200: #e5e5e5;
+      --color-gray-300: #d4d4d4;
+      --color-gray-400: #a3a3a3;
+      --color-gray-500: #737373;
+      --color-gray-600: #525252;
+      --color-gray-700: #404040;
+      --color-gray-800: #262626;
+      --color-gray-900: #171717;
+      
+      /* Vibrant Color Palette (Tailwind/Material inspired) */
+      --color-primary: #10b981;        /* Emerald 500 - fresh green */
+      --color-primary-hover: #059669;  /* Emerald 600 */
+      --color-primary-light: #d1fae5;  /* Emerald 100 */
+      
+      --color-secondary: #6366f1;     /* Indigo 500 */
+      --color-secondary-hover: #4f46e5; /* Indigo 600 */
+      --color-secondary-light: #e0e7ff; /* Indigo 100 */
+      
+      --color-accent: #0ea5e9;         /* Sky 500 */
+      --color-accent-hover: #0284c7;   /* Sky 600 */
+      --color-accent-light: #e0f2fe;   /* Sky 100 */
+      
+      --color-success: #10b981;        /* Emerald 500 */
+      --color-success-light: #d1fae5; /* Emerald 100 */
+      
+      --color-error: #f43f5e;          /* Rose 500 */
+      --color-error-light: #ffe4e6;    /* Rose 100 */
+      
+      /* Semantic Colors */
+      --color-background: #ffffff;
+      --color-surface: #ffffff;
+      --color-border: var(--color-gray-200);
+      --color-text-primary: var(--color-gray-900);
+      --color-text-secondary: var(--color-gray-600);
+      --color-text-tertiary: var(--color-gray-500);
+      --color-text-muted: var(--color-gray-400);
+      
+      /* Spacing Scale (4px base unit) */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      
+      /* Typography Scale */
+      --font-size-xs: 11px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-md: 16px;
+      --font-size-lg: 18px;
+      --font-size-xl: 20px;
+      
+      --font-weight-normal: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+      
+      /* Line Heights */
+      --line-height-tight: 1.2;
+      --line-height-normal: 1.5;
+      
+      /* Border */
+      --border-width: 1px;
+      --border-radius-sm: 6px;
+      --border-radius-md: 10px;
+      --border-radius-lg: 12px;
+      
+      /* Transitions */
+      --transition-fast: 0.15s ease;
+      --transition-base: 0.2s ease;
+    }
+
+    /* ========================================
+       RESET & BASE STYLES
+       ======================================== */
+    
     * {
       margin: 0;
       padding: 0;
@@ -12,149 +97,373 @@
     }
 
     body {
-      width: 400px;
-      padding: 20px;
+      width: 380px;
+      min-height: 400px;
+      max-height: 600px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: #f5f5f5;
+      background: var(--color-background);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-y: auto;
     }
 
+    /* ========================================
+       HEADER SECTION
+       ======================================== */
+    
     .header {
-      text-align: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #e0e0e0;
+      padding: var(--space-xl) var(--space-lg) var(--space-lg);
+      border-bottom: var(--border-width) solid var(--color-border);
+      background: var(--color-primary-light);
     }
 
     .header h1 {
-      font-size: 18px;
-      color: #333;
-      font-weight: 600;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-tight);
+      letter-spacing: -0.01em;
     }
 
+    .header-subtitle {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-top: var(--space-xs);
+      font-weight: var(--font-weight-normal);
+    }
+
+    /* ========================================
+       MAIN CONTENT
+       ======================================== */
+    
+    .content {
+      padding: var(--space-lg);
+    }
+
+    .section {
+      margin-bottom: var(--space-xl);
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ========================================
+       FORM ELEMENTS
+       ======================================== */
+    
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: var(--space-md);
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
     }
 
     .form-group label {
       display: block;
-      margin-bottom: 5px;
-      font-size: 14px;
-      color: #555;
-      font-weight: 500;
+      margin-bottom: var(--space-sm);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-medium);
     }
 
     .form-group input {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: border-color 0.2s;
+      padding: var(--space-sm) var(--space-md);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      background: var(--color-surface);
+      font-size: var(--font-size-base);
+      color: var(--color-text-primary);
+      font-family: inherit;
+      transition: border-color var(--transition-base);
     }
 
     .form-group input:focus {
       outline: none;
-      border-color: #4CAF50;
+      border-color: var(--color-primary);
     }
 
+    .form-group input:disabled {
+      background: var(--color-gray-50);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    /* ========================================
+       DATE RANGE SECTION
+       ======================================== */
+    
+    .date-range {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+    }
+
+    /* ========================================
+       ACCORDION (Advanced Settings)
+       ======================================== */
+    
+    .accordion {
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      overflow: hidden;
+      background: var(--color-surface);
+    }
+
+    .accordion-header {
+      padding: var(--space-md);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--color-gray-50);
+      transition: background-color var(--transition-base);
+      user-select: none;
+    }
+
+    .accordion-header:hover {
+      background: var(--color-gray-100);
+    }
+
+    .accordion-header-text {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+    }
+
+    .accordion-icon {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      transition: transform var(--transition-base);
+    }
+
+    .accordion-header.active .accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--transition-base);
+    }
+
+    .accordion-content.active {
+      max-height: 200px;
+    }
+
+    .accordion-body {
+      padding: var(--space-md);
+      border-top: var(--border-width) solid var(--color-border);
+    }
+
+    /* ========================================
+       BUTTONS
+       ======================================== */
+    
     .button-group {
       display: flex;
-      gap: 10px;
-      margin-top: 20px;
+      flex-direction: column;
+      gap: var(--space-sm);
     }
 
     button {
-      flex: 1;
-      padding: 10px 16px;
+      padding: var(--space-md) var(--space-lg);
       border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      font-weight: 500;
+      border-radius: var(--border-radius-md);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
       cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background-color: #45a049;
-    }
-
-    .btn-secondary {
-      background-color: #2196F3;
-      color: white;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background-color: #0b7dda;
-    }
-
-    .progress {
-      margin-top: 15px;
-      padding: 10px;
-      background-color: #e3f2fd;
-      border-radius: 4px;
-      font-size: 13px;
-      color: #1976d2;
-      text-align: center;
-      min-height: 40px;
+      transition: all var(--transition-base);
+      font-family: inherit;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: var(--space-sm);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #ffffff;
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-secondary {
+      background: var(--color-secondary);
+      color: #ffffff;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--color-secondary-hover);
+    }
+
+    .btn-accent {
+      background: var(--color-accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--color-accent-hover);
+    }
+
+    .btn-outline {
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      border: var(--border-width) solid var(--color-border);
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      background: var(--color-gray-50);
+      border-color: var(--color-gray-300);
+    }
+
+    /* ========================================
+       PROGRESS INDICATOR
+       ======================================== */
+    
+    .progress {
+      margin-top: var(--space-lg);
+      padding: var(--space-md);
+      border-radius: var(--border-radius-md);
+      font-size: var(--font-size-sm);
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--border-width) solid var(--color-border);
+      background: var(--color-gray-50);
+      color: var(--color-text-secondary);
     }
 
     .progress.success {
-      background-color: #e8f5e9;
-      color: #2e7d32;
+      background: var(--color-success-light);
+      border-color: var(--color-success);
+      color: var(--color-success);
+      font-weight: var(--font-weight-medium);
     }
 
     .progress.error {
-      background-color: #ffebee;
-      color: #c62828;
+      background: var(--color-error-light);
+      border-color: var(--color-error);
+      color: var(--color-error);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .progress.loading {
+      background: var(--color-accent-light);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* ========================================
+       UTILITIES
+       ======================================== */
+    
+    .hidden {
+      display: none;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .mt-sm {
+      margin-top: var(--space-sm);
+    }
+
+    .mt-md {
+      margin-top: var(--space-md);
     }
   </style>
 </head>
 <body>
+  <!-- Header -->
   <div class="header">
-    <h1 id="extensionName"></h1>
+    <h1 id="extensionName">FPTU Study Calendar</h1>
+    <div class="header-subtitle" id="headerSubtitle"></div>
   </div>
 
-  <div class="form-group">
-    <label for="startDate" id="startDateLabel"></label>
-    <input type="date" id="startDate" />
-  </div>
+  <!-- Main Content -->
+  <div class="content">
+    <!-- Date Range Section -->
+    <div class="section">
+      <div class="section-header" id="sectionDateRange"></div>
+      <div class="date-range">
+        <div class="form-group">
+          <label for="startDate" id="startDateLabel"></label>
+          <input type="date" id="startDate" />
+        </div>
+        <div class="form-group">
+          <label for="endDate" id="endDateLabel"></label>
+          <input type="date" id="endDate" />
+        </div>
+      </div>
+    </div>
 
-  <div class="form-group">
-    <label for="endDate" id="endDateLabel"></label>
-    <input type="date" id="endDate" />
-  </div>
+    <!-- Primary Actions -->
+    <div class="section">
+      <div class="button-group">
+        <button id="scrapeButton" class="btn-primary">
+          <span id="scrapeButtonText"></span>
+        </button>
+        <button id="previewButton" class="btn-secondary" disabled>
+          <span id="previewButtonText"></span>
+        </button>
+        <button id="exportButton" class="btn-accent" disabled>
+          <span id="exportButtonText"></span>
+        </button>
+      </div>
+    </div>
 
-  <div class="form-group">
-    <label for="waitTime" id="waitTimeLabel"></label>
-    <input type="number" id="waitTime" min="1000" step="1000" />
-  </div>
+    <!-- Advanced Settings Accordion -->
+    <div class="section">
+      <div class="accordion">
+        <div class="accordion-header" id="accordionHeader">
+          <span class="accordion-header-text" id="advancedSettingsText"></span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="accordionContent">
+          <div class="accordion-body">
+            <div class="form-group">
+              <label for="waitTime" id="waitTimeLabel">Wait Time (ms)</label>
+              <input type="number" id="waitTime" min="1000" step="1000" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div class="button-group">
-    <button id="scrapeButton" class="btn-primary"></button>
-    <button id="previewButton" class="btn-secondary" disabled>Xem kết quả</button>
-    <button id="exportButton" class="btn-secondary" disabled></button>
+    <!-- Progress Indicator -->
+    <div class="progress" id="progress"></div>
   </div>
-
-  <div class="progress" id="progress"></div>
 
   <script src="popup.js"></script>
 </body>
 </html>
-
