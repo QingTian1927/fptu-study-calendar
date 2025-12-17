@@ -17,14 +17,17 @@ function getEndOfYear(year) {
   return new Date(year, 11, 31); // December 31
 }
 
-// Calculate end date (5 months after start, but restricted to end of year)
+// Calculate end date (4 months after start, ending at the last day of the month)
 function calculateEndDate(startDate) {
   const start = new Date(startDate);
   const year = start.getFullYear();
   
-  // Add 5 months
+  // Add 4 months
   const endDate = new Date(start);
-  endDate.setMonth(endDate.getMonth() + 5);
+  endDate.setMonth(endDate.getMonth() + 4);
+  
+  // Set to the last day of that month
+  endDate.setMonth(endDate.getMonth() + 1, 0); // Day 0 = last day of previous month
   
   // Restrict to end of year
   const yearEnd = getEndOfYear(year);
@@ -42,22 +45,34 @@ async function initPopup() {
   document.getElementById('exportButton').textContent = getMessage('exportButton');
   document.getElementById('progress').textContent = getMessage('progressDefault');
 
-  // Load saved wait time (default 3000ms)
-  const result = await chrome.storage.local.get(['waitTime']);
+  // Load saved settings
+  const result = await chrome.storage.local.get(['waitTime', 'startDate', 'endDate']);
   const waitTime = result.waitTime || 3000;
   document.getElementById('waitTime').value = waitTime;
 
-  // Set start date to today
+  // Load saved dates or use defaults
   const today = new Date();
   const startDateInput = document.getElementById('startDate');
-  startDateInput.value = today.toISOString().split('T')[0];
-  
-  // Calculate and set end date
-  const endDate = calculateEndDate(today);
   const endDateInput = document.getElementById('endDate');
-  endDateInput.value = endDate.toISOString().split('T')[0];
+  
+  if (result.startDate && result.endDate) {
+    // Use saved dates
+    startDateInput.value = result.startDate;
+    endDateInput.value = result.endDate;
+    
+    // Set max date for end date based on start date year
+    const startYear = new Date(result.startDate).getFullYear();
+    endDateInput.max = getEndOfYear(startYear).toISOString().split('T')[0];
+  } else {
+    // Set start date to today
+    startDateInput.value = today.toISOString().split('T')[0];
+    
+    // Calculate and set end date
+    const endDate = calculateEndDate(today);
+    endDateInput.value = endDate.toISOString().split('T')[0];
+  }
 
-  // Update end date when start date changes
+  // Save dates when they change
   startDateInput.addEventListener('change', () => {
     const newStart = new Date(startDateInput.value);
     const newEnd = calculateEndDate(newStart);
@@ -66,6 +81,20 @@ async function initPopup() {
     // Update max date to end of year
     const year = newStart.getFullYear();
     endDateInput.max = getEndOfYear(year).toISOString().split('T')[0];
+    
+    // Save to storage
+    chrome.storage.local.set({
+      startDate: startDateInput.value,
+      endDate: endDateInput.value
+    });
+  });
+
+  endDateInput.addEventListener('change', () => {
+    // Save to storage
+    chrome.storage.local.set({
+      startDate: startDateInput.value,
+      endDate: endDateInput.value
+    });
   });
 
   // Save wait time when changed

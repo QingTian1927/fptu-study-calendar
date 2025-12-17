@@ -712,10 +712,10 @@ async function saveScrapedClasses(weeksData, mergeMode = 'replace') {
   }
 }
 
-// Clear scraped data on browser close/startup
+// Clear scraped data and date inputs on browser startup
 chrome.runtime.onStartup.addListener(() => {
-  chrome.storage.local.remove(['scrapedClasses']);
-  console.log('Cleared scraped classes on browser startup');
+  chrome.storage.local.remove(['scrapedClasses', 'startDate', 'endDate']);
+  console.log('Cleared scraped classes and date inputs on browser startup');
 });
 
 chrome.runtime.onInstalled.addListener(() => {
