@@ -186,20 +186,29 @@
   // Main extraction function
   function extractScheduleData() {
     try {
-      // Get year from dropdown
+      // Get year from dropdown, but prefer the values set by background script
       const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
-      const selectedYear = yearSelect ? parseInt(yearSelect.value, 10) : new Date().getFullYear();
+      let selectedYear = yearSelect ? parseInt(yearSelect.value, 10) : new Date().getFullYear();
+      let baseYear = selectedYear;
+      
+      // Check if background script set year values (for handling year boundaries)
+      if (typeof window.__selectedYear !== 'undefined') {
+        selectedYear = window.__selectedYear;
+        console.log('Using selected year from background script:', selectedYear);
+      }
+      if (typeof window.__baseYear !== 'undefined') {
+        baseYear = window.__baseYear;
+        console.log('Using base year from background script:', baseYear);
+      }
       
       // Get week range from dropdown to determine if week spans year boundary
       const weekSelect = document.querySelector('#ctl00_mainContent_drpSelectWeek');
       const selectedOption = weekSelect ? weekSelect.options[weekSelect.selectedIndex] : null;
       const weekRange = selectedOption ? selectedOption.text.trim() : '';
       
-      // Determine base year for date parsing
-      // When week spans year boundary (e.g., "30/12 To 05/01"), 
-      // if selected year is 2025, it means Dec 30, 2024 to Jan 5, 2025
-      // So December dates use (selectedYear - 1), January dates use selectedYear
-      let baseYear = selectedYear;
+      // Determine if week spans year boundary
+      // baseYear is already set from window.__baseYear if provided by background script
+      // If not provided, calculate it based on whether week spans boundary
       let weekSpansBoundary = false;
       
       if (weekRange) {
@@ -212,8 +221,10 @@
           // If week spans year boundary (e.g., Dec to Jan)
           if (startMonth === 12 && endMonth === 1) {
             weekSpansBoundary = true;
-            // December dates are from previous year
-            baseYear = selectedYear - 1;
+            // If baseYear wasn't set by background script, calculate it
+            if (typeof window.__baseYear === 'undefined') {
+              baseYear = selectedYear - 1;
+            }
           }
         }
       }

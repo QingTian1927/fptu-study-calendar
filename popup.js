@@ -92,6 +92,18 @@ async function initPopup() {
       return;
     }
 
+    // Check for existing data and prompt for merge/replace
+    const existing = await chrome.storage.local.get(['scrapedClasses']);
+    let mergeMode = 'replace';
+    if (existing.scrapedClasses && existing.scrapedClasses.length > 0) {
+      const userChoice = confirm(
+        'Đã có dữ liệu lớp học được lưu trữ.\n\n' +
+        'Nhấn OK để thay thế tất cả dữ liệu cũ.\n' +
+        'Nhấn Cancel để hợp nhất với dữ liệu hiện có.'
+      );
+      mergeMode = userChoice ? 'replace' : 'merge';
+    }
+
     // Disable button and show progress
     const scrapeButton = document.getElementById('scrapeButton');
     const exportButton = document.getElementById('exportButton');
@@ -114,7 +126,8 @@ async function initPopup() {
           action: 'startScraping',
           startDate,
           endDate,
-          waitTime
+          waitTime,
+          mergeMode
         }, (response) => {
           clearTimeout(timeout);
           
@@ -144,13 +157,9 @@ async function initPopup() {
           console.log('Các tuần không thể trích xuất:', response.errors);
         }
         
-        // Enable export button
+        // Enable export and preview buttons
         exportButton.disabled = false;
-        
-        // Store scraped data for export
-        if (response.data) {
-          chrome.storage.local.set({ scrapedData: response.data });
-        }
+        previewButton.disabled = false;
         
         // Reset progress after 5 seconds
         setTimeout(() => {
@@ -175,11 +184,27 @@ async function initPopup() {
     }
   });
 
+  // Preview button handler
+  const previewButton = document.getElementById('previewButton');
+  previewButton.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('calendar.html') });
+  });
+
   // Export button handler (placeholder for MVP)
   document.getElementById('exportButton').addEventListener('click', () => {
     // This will be implemented later for .ics export
     alert('Tính năng xuất file .ics sẽ được triển khai trong phiên bản tiếp theo');
   });
+
+  // Check if there's existing scraped data to enable preview/export buttons
+  async function checkExistingData() {
+    const result = await chrome.storage.local.get(['scrapedClasses']);
+    if (result.scrapedClasses && result.scrapedClasses.length > 0) {
+      previewButton.disabled = false;
+      document.getElementById('exportButton').disabled = false;
+    }
+  }
+  checkExistingData();
 
   // Listen for progress updates from background
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

@@ -207,25 +207,12 @@ function weekOverlapsRange(weekStart, weekEnd, rangeStart, rangeEnd) {
 }
 
 // Extract week information from dropdown
-async function getWeekOptions(tabId, year, waitTime) {
+// Note: This function assumes the year dropdown is already set correctly
+// It only reads the week options, it does NOT change the year dropdown
+async function getWeekOptions(tabId) {
   try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (year) => {
-        const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
-        if (yearSelect) {
-          yearSelect.value = year.toString();
-          // Trigger change event
-          const event = new Event('change', { bubbles: true });
-          yearSelect.dispatchEvent(event);
-        }
-      },
-      args: [year]
-    });
-
-    // Wait for week dropdown to update
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-
+    // Just read the week options without changing the year
+    // The year should already be set correctly before calling this function
     const weekResults = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
@@ -266,15 +253,18 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
     const [endDay, endMonth] = weekEndStr.split('/').map(Number);
     
     // Determine year for week dates (handle year boundaries)
-    // IMPORTANT: When year dropdown shows 2025 and week is "30/12 To 05/01",
-    // it means Dec 30, 2024 to Jan 5, 2025 (the LAST week of 2024, shown in 2025's dropdown)
+    // IMPORTANT: When year dropdown shows 2026 and week is "30/12 To 05/01",
+    // it means Dec 30, 2025 to Jan 5, 2026 (the LAST week of 2025, shown at the start of 2026's dropdown)
+    // When year dropdown shows 2026 and week is "05/01 To 11/01",
+    // it means Jan 5, 2026 to Jan 11, 2026 (a week in 2026)
+    
     let weekStartYear = year;
     let weekEndYear = year;
     
     // If week spans year boundary (e.g., 30/12 To 05/01)
     if (startMonth === 12 && endMonth === 1) {
-      // Week starts in December of PREVIOUS year, ends in January of CURRENT year
-      // This is the last week of the previous year, shown at the start of current year's dropdown
+      // Week starts in December of (year-1), ends in January of year
+      // This is the last week of (year-1), shown at the start of year's dropdown
       weekStartYear = year - 1;
       weekEndYear = year;
     } else if (startMonth > endMonth) {
@@ -282,22 +272,19 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
       weekStartYear = year - 1;
       weekEndYear = year;
     } else {
-      // Week is within the same year
+      // Week is within the same year (e.g., 05/01 To 11/01 in 2026 dropdown = Jan 2026)
       weekStartYear = year;
       weekEndYear = year;
     }
     
     const weekStartDate = parseDate(weekStartStr, weekStartYear);
-    const weekEndDate = parseDate(weekEndStr, weekEndYear);
+    let weekEndDate = parseDate(weekEndStr, weekEndYear);
     
     // Verify the dates make sense
     if (weekEndDate < weekStartDate) {
       // This shouldn't happen, but if it does, adjust
       weekEndYear = weekStartYear + 1;
-      const adjustedEndDate = parseDate(weekEndStr, weekEndYear);
-      if (adjustedEndDate >= weekStartDate) {
-        weekEndDate = adjustedEndDate;
-      }
+      weekEndDate = parseDate(weekEndStr, weekEndYear);
     }
     
     if (weekOverlapsRange(weekStartDate, weekEndDate, rangeStart, rangeEnd)) {
@@ -505,25 +492,48 @@ async function startScraping(startDate, endDate, waitTime) {
     // Step 4: Determine year from start date
     const year = new Date(startDate).getFullYear();
     
-    // Step 5: Select year
-    await chrome.scripting.executeScript({
+    // Step 5: Check current year dropdown value and update if necessary
+    const currentYearResult = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: (year) => {
+      func: () => {
         const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
         if (yearSelect) {
-          yearSelect.value = year.toString();
-          if (typeof __doPostBack === 'function') {
-            __doPostBack('ctl00$mainContent$drpYear', '');
-          }
+          return parseInt(yearSelect.value, 10);
         }
-      },
-      args: [year]
+        return null;
+      }
     });
     
-    await new Promise(resolve => setTimeout(resolve, waitTime));
+    const currentYear = currentYearResult[0].result;
+    const needsYearUpdate = currentYear === null || currentYear !== year;
     
-    // Step 6: Get week options
-    const weekOptions = await getWeekOptions(tab.id, year, waitTime);
+    if (needsYearUpdate) {
+      console.log(`Current year dropdown: ${currentYear}, updating to: ${year}`);
+      // Select year
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (year) => {
+          const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
+          if (yearSelect) {
+            yearSelect.value = year.toString();
+            if (typeof __doPostBack === 'function') {
+              __doPostBack('ctl00$mainContent$drpYear', '');
+            }
+          }
+        },
+        args: [year]
+      });
+      
+      // Wait for DOM to load after year change
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    } else {
+      console.log(`Year dropdown already set to ${year}, skipping update`);
+    }
+    
+    // Step 6: Get week options (always fetch fresh after potential year change)
+    // If we updated the year, the week dropdown should already be updated
+    // If we didn't update, we still need to read the current week options
+    const weekOptions = await getWeekOptions(tab.id);
     
     // Step 7: Filter weeks by date range
     const weeksToScrape = filterWeeksByRange(weekOptions, startDate, endDate, year);
@@ -545,32 +555,32 @@ async function startScraping(startDate, endDate, waitTime) {
         // Ignore errors
       }
       
-      // Update year if week spans year boundary
-      if (week.startYear && week.startYear !== year) {
-        console.log(`Switching to year ${week.startYear} for week ${week.text}`);
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: (targetYear) => {
-            const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
-            if (yearSelect && yearSelect.value !== targetYear.toString()) {
-              yearSelect.value = targetYear.toString();
-              if (typeof __doPostBack === 'function') {
-                __doPostBack('ctl00$mainContent$drpYear', '');
-              }
-            }
-          },
-          args: [week.startYear]
-        });
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        
-        // Re-get week options after year change
-        const updatedWeekOptions = await getWeekOptions(tab.id, week.startYear, waitTime);
-        // Find the matching week in the new year's options
-        const matchingWeek = updatedWeekOptions.find(opt => opt.text === week.text);
-        if (matchingWeek) {
-          week.value = matchingWeek.value;
-        }
-      }
+      // IMPORTANT: We should NOT switch years based on week.startYear
+      // The week appears in the current year's dropdown, so we should stay on that year
+      // The week.startYear is only used for date parsing, not for which dropdown to use
+      // For example, week "29/12 To 04/01" appears in 2026 dropdown, so we stay on 2026
+      // even though the week starts in 2025
+      
+      // Pass the correct year for date parsing to content script
+      // For weeks that span year boundaries, we need to tell content script which year to use
+      // for parsing dates. For "29/12 To 04/01" in 2026 dropdown:
+      // - December dates (29/12) should use 2025
+      // - January dates (04/01) should use 2026
+      // The content script will handle this based on weekSpansBoundary flag
+      
+      // Set the expected year for date parsing
+      // For boundary weeks, we need to pass both the selected year (for the dropdown)
+      // and the base year (for parsing December dates)
+      const baseYearForParsing = week.startYear || year;
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (selectedYear, baseYear) => {
+          // Store both the selected year (dropdown year) and base year (for parsing)
+          window.__selectedYear = selectedYear;
+          window.__baseYear = baseYear;
+        },
+        args: [year, baseYearForParsing]
+      });
       
       let success = false;
       let retries = 0;
@@ -646,6 +656,78 @@ async function startScraping(startDate, endDate, waitTime) {
   }
 }
 
+// Flatten weeks data to classes array
+function flattenWeeksToClasses(weeksData) {
+  const classes = [];
+  if (weeksData && weeksData.weeks) {
+    weeksData.weeks.forEach(week => {
+      if (week.classes && Array.isArray(week.classes)) {
+        week.classes.forEach(cls => {
+          classes.push(cls);
+        });
+      }
+    });
+  }
+  return classes;
+}
+
+// Merge classes arrays (update existing, add new)
+function mergeClasses(existingClasses, newClasses) {
+  const merged = [...existingClasses];
+  
+  newClasses.forEach(newClass => {
+    const index = merged.findIndex(c => c.activityId === newClass.activityId);
+    if (index !== -1) {
+      // Update existing
+      merged[index] = newClass;
+    } else {
+      // Add new
+      merged.push(newClass);
+    }
+  });
+  
+  return merged;
+}
+
+// Save scraped classes to storage
+async function saveScrapedClasses(weeksData, mergeMode = 'replace') {
+  try {
+    const newClasses = flattenWeeksToClasses(weeksData);
+    
+    // Check if there's existing data
+    const existing = await chrome.storage.local.get(['scrapedClasses']);
+    const existingClasses = existing.scrapedClasses || [];
+    
+    let finalClasses;
+    if (existingClasses.length > 0 && mergeMode === 'merge') {
+      finalClasses = mergeClasses(existingClasses, newClasses);
+    } else {
+      finalClasses = newClasses;
+    }
+    
+    await chrome.storage.local.set({ scrapedClasses: finalClasses });
+    console.log(`Saved ${finalClasses.length} classes to storage (mode: ${mergeMode})`);
+  } catch (error) {
+    console.error('Error saving scraped classes:', error);
+  }
+}
+
+// Clear scraped data on browser close/startup
+chrome.runtime.onStartup.addListener(() => {
+  chrome.storage.local.remove(['scrapedClasses']);
+  console.log('Cleared scraped classes on browser startup');
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  // Only clear on first install, not on updates
+  chrome.storage.local.get(['scrapedClasses'], (result) => {
+    if (!result.scrapedClasses) {
+      chrome.storage.local.remove(['scrapedClasses']);
+      console.log('Cleared scraped classes on first install');
+    }
+  });
+});
+
 // Message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Background received message:', message.action);
@@ -660,12 +742,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Starting scraping process...');
     
     // Handle async response - must return true to keep channel open
-    startScraping(message.startDate, message.endDate, message.waitTime)
-      .then((result) => {
+    startScraping(message.startDate, message.endDate, message.waitTime, message.mergeMode)
+      .then(async (result) => {
         // Log to console
         console.log('Scraping completed:', result);
         if (result.success && result.data) {
           console.log('Scraped data (JSON):', JSON.stringify(result.data, null, 2));
+          
+          // Save scraped classes to storage
+          await saveScrapedClasses(result.data, message.mergeMode || 'replace');
         }
         if (result.errors && result.errors.length > 0) {
           console.log('Failed weeks:', result.errors);
