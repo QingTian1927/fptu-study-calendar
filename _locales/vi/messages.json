@@ -1,0 +1,65 @@
+{
+  "extensionName": {
+    "message": "FPTU Study Calendar",
+    "description": "Tên của extension"
+  },
+  "extensionDescription": {
+    "message": "Xuất lịch học từ FPTU FAP sang file .ics để import vào Google Calendar",
+    "description": "Mô tả của extension"
+  },
+  "popupTitle": {
+    "message": "FPTU Study Calendar Exporter",
+    "description": "Tiêu đề popup"
+  },
+  "startDateLabel": {
+    "message": "Ngày bắt đầu:",
+    "description": "Nhãn ngày bắt đầu"
+  },
+  "endDateLabel": {
+    "message": "Ngày kết thúc:",
+    "description": "Nhãn ngày kết thúc"
+  },
+  "waitTimeLabel": {
+    "message": "Thời gian chờ (ms):",
+    "description": "Nhãn thời gian chờ"
+  },
+  "scrapeButton": {
+    "message": "Bắt đầu trích xuất",
+    "description": "Nút bắt đầu trích xuất"
+  },
+  "exportButton": {
+    "message": "Xuất file .ics",
+    "description": "Nút xuất file"
+  },
+  "progressDefault": {
+    "message": "Sẵn sàng",
+    "description": "Trạng thái mặc định"
+  },
+  "progressScraping": {
+    "message": "Đang trích xuất tuần $WEEK$/$TOTAL$...",
+    "description": "Trạng thái đang trích xuất",
+    "placeholders": {
+      "WEEK": {
+        "content": "$1",
+        "example": "3"
+      },
+      "TOTAL": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "progressSuccess": {
+    "message": "Trích xuất thành công!",
+    "description": "Thông báo thành công"
+  },
+  "errorNotLoggedIn": {
+    "message": "Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.",
+    "description": "Lỗi chưa đăng nhập"
+  },
+  "errorNavigation": {
+    "message": "Không thể điều hướng đến trang lịch học. Vui lòng thử lại.",
+    "description": "Lỗi điều hướng"
+  }
+}
+
