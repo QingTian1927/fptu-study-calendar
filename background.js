@@ -4,6 +4,8 @@ const FAP_BASE_URL = 'https://fap.fpt.edu.vn';
 const TIMETABLE_URL = 'https://fap.fpt.edu.vn/Report/ScheduleOfWeek.aspx';
 const LOGIN_CHECK_SELECTOR = '#ctl00_divUser';
 const MAX_RETRIES = 3;
+const LOGIN_CACHE_KEY = 'fptu_calendar_login_state';
+const LOGIN_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 // Log when service worker starts
 console.log('FPTU Study Calendar Exporter: Background service worker loaded');
@@ -53,18 +55,100 @@ function waitForElement(selector, timeout = 30000) {
   });
 }
 
-// Check if user is logged in
-async function checkLogin(tabId) {
+// Get cached login state
+async function getCachedLoginState() {
   try {
+    const cached = await chrome.storage.local.get(LOGIN_CACHE_KEY);
+    if (cached[LOGIN_CACHE_KEY]) {
+      const { isLoggedIn, timestamp } = cached[LOGIN_CACHE_KEY];
+      const now = Date.now();
+      // Check if cache is still valid (within 30 minutes)
+      if (now - timestamp < LOGIN_CACHE_DURATION) {
+        console.log('Using cached login state:', isLoggedIn);
+        return isLoggedIn;
+      } else {
+        console.log('Login cache expired, will re-check');
+      }
+    }
+    return null; // No valid cache
+  } catch (error) {
+    console.error('Error getting cached login state:', error);
+    return null;
+  }
+}
+
+// Save login state to cache
+async function saveLoginStateToCache(isLoggedIn) {
+  try {
+    await chrome.storage.local.set({
+      [LOGIN_CACHE_KEY]: {
+        isLoggedIn,
+        timestamp: Date.now()
+      }
+    });
+    console.log('Saved login state to cache:', isLoggedIn);
+  } catch (error) {
+    console.error('Error saving login state to cache:', error);
+  }
+}
+
+// Invalidate login cache (e.g., when navigation fails, user might have logged out)
+async function invalidateLoginCache() {
+  try {
+    await chrome.storage.local.remove(LOGIN_CACHE_KEY);
+    console.log('Invalidated login cache');
+  } catch (error) {
+    console.error('Error invalidating login cache:', error);
+  }
+}
+
+// Check if already on timetable page
+async function isOnTimetablePage(tabId) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        // Check if URL matches timetable page and has student info element
+        const isCorrectUrl = window.location.href === 'https://fap.fpt.edu.vn/Report/ScheduleOfWeek.aspx';
+        const hasStudentInfo = document.querySelector('#ctl00_mainContent_lblStudent') !== null;
+        return isCorrectUrl && hasStudentInfo;
+      }
+    });
+    return results[0].result;
+  } catch (error) {
+    console.error('Error checking if on timetable page:', error);
+    return false;
+  }
+}
+
+// Check if user is logged in (with caching)
+async function checkLogin(tabId, forceCheck = false) {
+  try {
+    // Check cache first unless forced
+    if (!forceCheck) {
+      const cachedState = await getCachedLoginState();
+      if (cachedState !== null) {
+        return cachedState;
+      }
+    }
+    
+    // Perform actual login check
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
         return document.querySelector('#ctl00_divUser') !== null;
       }
     });
-    return results[0].result;
+    const isLoggedIn = results[0].result;
+    
+    // Save to cache
+    await saveLoginStateToCache(isLoggedIn);
+    
+    return isLoggedIn;
   } catch (error) {
     console.error('Error checking login:', error);
+    // On error, invalidate cache to force re-check next time
+    await invalidateLoginCache();
     return false;
   }
 }
@@ -85,6 +169,8 @@ async function navigateToUrl(tabId, url, waitTime) {
     return true;
   } catch (error) {
     console.error('Navigation error:', error);
+    // Navigation failure might indicate user logged out, invalidate cache
+    await invalidateLoginCache();
     return false;
   }
 }
@@ -356,44 +442,64 @@ async function startScraping(startDate, endDate, waitTime) {
     // Get or create tab
     let tab = await getCurrentTab();
     
-    // Step 1: Navigate to FAP homepage
-    if (!tab || !tab.url || !tab.url.startsWith(FAP_BASE_URL)) {
-      tab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      // Update tab reference
-      const tabs = await chrome.tabs.query({ url: `${FAP_BASE_URL}/*` });
-      if (tabs.length > 0) {
-        tab = tabs[0];
+    // Check if already on timetable page
+    let alreadyOnTimetable = false;
+    if (tab && tab.url && tab.url === TIMETABLE_URL) {
+      alreadyOnTimetable = await isOnTimetablePage(tab.id);
+      if (alreadyOnTimetable) {
+        console.log('Already on timetable page, skipping navigation');
+        // Still check login (using cache) to ensure user is logged in
+        const isLoggedIn = await checkLogin(tab.id);
+        if (!isLoggedIn) {
+          // If not logged in, invalidate cache and proceed with normal flow
+          await invalidateLoginCache();
+          alreadyOnTimetable = false;
+        }
       }
-    } else {
-      await navigateToUrl(tab.id, FAP_BASE_URL, waitTime);
     }
     
-    // Step 2: Check login
-    const isLoggedIn = await checkLogin(tab.id);
-    if (!isLoggedIn) {
-      // Show alert to user
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
+    if (!alreadyOnTimetable) {
+      // Step 1: Navigate to FAP homepage
+      if (!tab || !tab.url || !tab.url.startsWith(FAP_BASE_URL)) {
+        tab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        // Update tab reference
+        const tabs = await chrome.tabs.query({ url: `${FAP_BASE_URL}/*` });
+        if (tabs.length > 0) {
+          tab = tabs[0];
         }
-      });
-      throw new Error('NOT_LOGGED_IN');
-    }
-    
-    // Step 3: Navigate to timetable page
-    const navSuccess = await navigateToUrl(tab.id, TIMETABLE_URL, waitTime);
-    if (!navSuccess) {
-      // Show alert to user
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          alert('Không thể điều hướng đến trang lịch học. Vui lòng thử lại.');
-        }
-      });
-      console.error('Failed to navigate to timetable page');
-      throw new Error('NAVIGATION_FAILED');
+      } else {
+        await navigateToUrl(tab.id, FAP_BASE_URL, waitTime);
+      }
+      
+      // Step 2: Check login
+      const isLoggedIn = await checkLogin(tab.id);
+      if (!isLoggedIn) {
+        // Show alert to user
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
+          }
+        });
+        throw new Error('NOT_LOGGED_IN');
+      }
+      
+      // Step 3: Navigate to timetable page
+      const navSuccess = await navigateToUrl(tab.id, TIMETABLE_URL, waitTime);
+      if (!navSuccess) {
+        // Show alert to user
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            alert('Không thể điều hướng đến trang lịch học. Vui lòng thử lại.');
+          }
+        });
+        console.error('Failed to navigate to timetable page');
+        // Navigation failure might indicate user logged out, invalidate cache
+        await invalidateLoginCache();
+        throw new Error('NAVIGATION_FAILED');
+      }
     }
     
     // Step 4: Determine year from start date
