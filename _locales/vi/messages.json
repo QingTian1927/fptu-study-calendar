@@ -140,7 +140,7 @@
     "description": "Nút đóng overlay"
   },
   "classRelocated": {
-    "message": "Đã đổi slot",
+    "message": "Đổi slot",
     "description": "Badge hiển thị khi lớp đã được đổi slot"
   },
   "classEduNext": {
