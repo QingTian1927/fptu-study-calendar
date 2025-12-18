@@ -211,6 +211,52 @@
     }
 
     /* ========================================
+       PILL SWITCHER
+       ======================================== */
+    
+    .pill-switcher {
+      display: inline-flex;
+      background: var(--color-gray-100);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      padding: 2px;
+      gap: 0;
+      align-items: stretch;
+    }
+    
+    .pill-switcher-btn {
+      flex: 1;
+      padding: var(--space-sm) var(--space-lg);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      line-height: inherit;
+      cursor: pointer;
+      border-radius: calc(var(--border-radius-lg) - 2px);
+      transition: all var(--transition-base);
+      font-family: inherit;
+      white-space: nowrap;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .pill-switcher-btn:hover:not(.active) {
+      color: var(--color-text-primary);
+      background: var(--color-gray-50);
+    }
+    
+    .pill-switcher-btn.active {
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ========================================
        WEEK VIEW
        ======================================== */
     
@@ -925,8 +971,10 @@
       <div class="header-subtitle" id="headerSubtitle">Chọn tuần để xem lịch học</div>
     </div>
     <div class="view-controls">
-      <button id="weekViewBtn" class="btn btn-outline active" data-i18n="viewWeek">Tuần</button>
-      <button id="listViewBtn" class="btn btn-outline" data-i18n="viewList">Danh sách</button>
+      <div class="pill-switcher">
+        <button id="weekViewBtn" class="pill-switcher-btn active" data-i18n="viewWeek">Tuần</button>
+        <button id="listViewBtn" class="pill-switcher-btn" data-i18n="viewList">Danh sách</button>
+      </div>
       <button id="exportBtn" class="btn btn-primary" data-i18n="exportIcs">Xuất file .ics</button>
     </div>
   </div>
