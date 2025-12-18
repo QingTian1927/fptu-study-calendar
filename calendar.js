@@ -469,12 +469,18 @@ function createClassBlock(cls) {
     badgesHtml += '</div>';
   }
   
-  // Build links section (Meet and EduNext) - will be pushed to bottom via flexbox
+  // Build links section (Materials, Meet, and EduNext) - will be pushed to bottom via flexbox
+  // Materials link is always first (leftmost)
   let linksHtml = '';
+  if (cls.materialsUrl) {
+    linksHtml += `<a href="${cls.materialsUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📄 ${getMessage('classMaterials')}</a>`;
+  }
   if (cls.isOnline && cls.meetUrl) {
+    if (linksHtml) linksHtml += ' ';
     linksHtml += `<a href="${cls.meetUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">🔗 Meet</a>`;
   }
   if (cls.edunextUrl) {
+    if (linksHtml) linksHtml += ' ';
     linksHtml += `<a href="${cls.edunextUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📚 ${getMessage('classEduNext')}</a>`;
   }
   
@@ -598,6 +604,7 @@ async function saveEditedClass(formData) {
     location: formData.location,
     meetUrl: formData.meetUrl || null,
     edunextUrl: allClasses[index].edunextUrl || null, // Preserve edunextUrl
+    materialsUrl: allClasses[index].materialsUrl || null, // Preserve materialsUrl
     isRelocated: allClasses[index].isRelocated || false, // Preserve isRelocated
     status: formData.status,
     isOnline: formData.meetUrl ? true : allClasses[index].isOnline

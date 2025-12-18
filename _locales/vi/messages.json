@@ -146,6 +146,10 @@
   "classEduNext": {
     "message": "EduNext",
     "description": "Link đến EduNext"
+  },
+  "classMaterials": {
+    "message": "Tài liệu",
+    "description": "Link đến tài liệu học tập"
   }
 }
 

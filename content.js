@@ -152,6 +152,13 @@
         meetUrl = meetLink.href;
       }
       
+      // Extract Materials URL (View Materials link - always the first link with label-warning)
+      let materialsUrl = null;
+      const materialsLink = container.querySelector('a.label.label-warning[href*="flm.fpt.edu.vn"]');
+      if (materialsLink) {
+        materialsUrl = materialsLink.href;
+      }
+      
       // Check if online - look for online-indicator in the cell (parent of container)
       // or if there's a meet URL, or if location contains "Meet URL"
       const cell = container.closest('td');
@@ -204,6 +211,7 @@
         isOnline,
         meetUrl: meetUrl,
         edunextUrl: edunextUrl,
+        materialsUrl: materialsUrl,
         isRelocated: isRelocated,
         status,
         activityId
