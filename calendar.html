@@ -156,6 +156,15 @@
       transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
       white-space: nowrap;
       font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .btn svg {
+      flex-shrink: 0;
+      vertical-align: middle;
     }
 
     .btn:hover:not(:disabled) {
@@ -242,6 +251,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
+    }
+    
+    .pill-switcher-btn svg {
+      flex-shrink: 0;
+      vertical-align: middle;
     }
     
     .pill-switcher-btn:hover:not(.active) {
@@ -850,6 +865,10 @@
 
     .modal-header {
       margin-bottom: var(--space-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-md);
     }
 
     .modal-header h2 {
@@ -857,6 +876,12 @@
       font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
       line-height: var(--line-height-tight);
+      flex: 1;
+      margin: 0;
+    }
+    
+    .btn-delete-header {
+      flex-shrink: 0;
     }
 
     .form-group {
@@ -896,6 +921,11 @@
       gap: var(--space-sm);
       margin-top: var(--space-xl);
       justify-content: flex-end;
+    }
+    
+    .form-actions .btn {
+      flex: 1;
+      min-width: 0;
     }
 
     /* ========================================
@@ -972,8 +1002,19 @@
     </div>
     <div class="view-controls">
       <div class="pill-switcher">
-        <button id="weekViewBtn" class="pill-switcher-btn active" data-i18n="viewWeek">Tuần</button>
-        <button id="listViewBtn" class="pill-switcher-btn" data-i18n="viewList">Danh sách</button>
+        <button id="weekViewBtn" class="pill-switcher-btn active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-week" viewBox="0 0 16 16">
+            <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
+            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+          </svg>
+          <span data-i18n="viewWeek">Tuần</span>
+        </button>
+        <button id="listViewBtn" class="pill-switcher-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+          </svg>
+          <span data-i18n="viewList">Danh sách</span>
+        </button>
       </div>
       <button id="exportBtn" class="btn btn-primary" data-i18n="exportIcs">Xuất file .ics</button>
     </div>
@@ -981,9 +1022,19 @@
 
   <div id="weekView" class="week-view">
     <div class="week-navigation">
-      <button id="prevWeekBtn" class="btn btn-outline"><span data-i18n="prevWeek">← Tuần trước</span></button>
+      <button id="prevWeekBtn" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+        </svg>
+        <span data-i18n="prevWeek">Tuần trước</span>
+      </button>
       <select id="weekSelector" class="week-selector"></select>
-      <button id="nextWeekBtn" class="btn btn-outline"><span data-i18n="nextWeek">Tuần sau →</span></button>
+      <button id="nextWeekBtn" class="btn btn-outline">
+        <span data-i18n="nextWeek">Tuần sau</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+        </svg>
+      </button>
     </div>
     <div id="weekGrid" class="week-grid"></div>
   </div>
@@ -1028,6 +1079,12 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 data-i18n="editModalTitle">Chỉnh sửa lớp học</h2>
+        <button type="button" id="deleteBtn" class="btn btn-danger btn-delete-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+            <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+          </svg>
+          <span data-i18n="buttonDelete">Xóa</span>
+        </button>
       </div>
       <form id="editForm">
         <div class="form-group">
@@ -1063,9 +1120,14 @@
           </select>
         </div>
         <div class="form-actions">
-          <button type="button" id="deleteBtn" class="btn btn-danger" data-i18n="buttonDelete">Xóa</button>
           <button type="button" id="cancelBtn" class="btn btn-outline" data-i18n="buttonCancel">Hủy</button>
-          <button type="submit" class="btn btn-primary" data-i18n="buttonSave">Lưu</button>
+          <button type="submit" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
+              <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+              <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
+            </svg>
+            <span data-i18n="buttonSave">Lưu</span>
+          </button>
         </div>
       </form>
     </div>
