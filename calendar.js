@@ -1,5 +1,10 @@
 // Calendar preview page JavaScript
 
+// Internationalization helper
+function getMessage(key, substitutions = []) {
+  return chrome.i18n.getMessage(key, substitutions);
+}
+
 let allClasses = [];
 let currentWeekStart = null;
 let currentEditingClass = null;
@@ -450,15 +455,41 @@ function createClassBlock(cls) {
   block.dataset.baseColor = baseColor;
   
   const timeStr = `${cls.time.start} - ${cls.time.end}`;
-  const onlineIndicator = cls.isOnline ? '<div class="class-online-indicator">● Online</div>' : '';
-  const meetUrlLink = cls.isOnline && cls.meetUrl ? `<a href="${cls.meetUrl}" target="_blank" class="class-meet-link" onclick="event.stopPropagation();">🔗 Meet</a>` : '';
+  
+  // Build badge group (Online + Relocated)
+  let badgesHtml = '';
+  if (cls.isOnline || cls.isRelocated) {
+    badgesHtml = '<div class="class-badges">';
+    if (cls.isOnline) {
+      badgesHtml += `<span class="class-badge class-badge-online">● Online</span>`;
+    }
+    if (cls.isRelocated === true) {
+      badgesHtml += `<span class="class-badge class-badge-relocated">${getMessage('classRelocated')}</span>`;
+    }
+    badgesHtml += '</div>';
+  }
+  
+  // Build links section (Meet and EduNext) - will be pushed to bottom via flexbox
+  let linksHtml = '';
+  if (cls.isOnline && cls.meetUrl) {
+    linksHtml += `<a href="${cls.meetUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">🔗 Meet</a>`;
+  }
+  if (cls.edunextUrl) {
+    linksHtml += `<a href="${cls.edunextUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📚 ${getMessage('classEduNext')}</a>`;
+  }
   
   block.innerHTML = `
-    <div class="class-name">${cls.subjectCode}</div>
-    <div class="class-location">${cls.location || 'N/A'}</div>
-    <div class="class-time">${timeStr}</div>
-    ${onlineIndicator}
-    ${meetUrlLink}
+    <div class="class-content">
+      <div class="class-header">
+        <div class="class-name">${cls.subjectCode}</div>
+        ${badgesHtml}
+      </div>
+      <div class="class-meta">
+        <div class="class-location">${cls.location || 'N/A'}</div>
+        <div class="class-time">${timeStr}</div>
+      </div>
+    </div>
+    ${linksHtml ? `<div class="class-links">${linksHtml}</div>` : ''}
   `;
   block.addEventListener('click', () => openEditModal(cls));
   return block;
@@ -566,6 +597,8 @@ async function saveEditedClass(formData) {
     },
     location: formData.location,
     meetUrl: formData.meetUrl || null,
+    edunextUrl: allClasses[index].edunextUrl || null, // Preserve edunextUrl
+    isRelocated: allClasses[index].isRelocated || false, // Preserve isRelocated
     status: formData.status,
     isOnline: formData.meetUrl ? true : allClasses[index].isOnline
   };

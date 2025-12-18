@@ -80,8 +80,9 @@
   // Extract class data from link and container
   function extractClassData(link, container, dayIndex, dates, baseYear, slotNumber, weekSpansBoundary, selectedYear) {
     try {
-      // Extract subject code (text before "-" in link)
-      const subjectCodeMatch = link.textContent.match(/^([A-Z0-9]+)-?/);
+      // Extract subject code (text before "-" in link, including postfix letters like 'c')
+      // Pattern: Main code (A-Z0-9) + optional postfix (lowercase letters) + optional dash
+      const subjectCodeMatch = link.textContent.match(/^([A-Z0-9]+[a-z]*)-?/);
       const subjectCode = subjectCodeMatch ? subjectCodeMatch[1] : '';
       
       // Extract activity ID from href
@@ -89,16 +90,40 @@
       const activityId = activityIdMatch ? activityIdMatch[1] : '';
       
       // Extract location (text after "at ")
-      // Stop before " - " (Meet URL), status patterns like "(Not yet)", or time patterns like "(12:50-15:10)"
+      // Stop before " - " (Meet URL), "-EduNext", status patterns like "(Not yet)", or time patterns like "(12:50-15:10)"
       // Also stop at line breaks or HTML tags
       let location = '';
       const containerText = container.textContent;
-      const atMatch = containerText.match(/at\s+(.+?)(?:\s*-\s*(?:Meet\s+URL|$)|\(Not\s+yet\)|\(attended\)|\(absent\)|\(\d{1,2}:\d{2}-\d{1,2}:\d{2}\)|\n|\r|<|$)/i);
+      // Updated regex to stop before "-EduNext" as well
+      const atMatch = containerText.match(/at\s+(.+?)(?:\s*-\s*(?:EduNext|Meet\s+URL|$)|\(Not\s+yet\)|\(attended\)|\(absent\)|\(\d{1,2}:\d{2}-\d{1,2}:\d{2}\)|\n|\r|<|$)/i);
       if (atMatch) {
         location = atMatch[1].trim();
         // Remove trailing dash if present
         location = location.replace(/\s*-\s*$/, '').trim();
       }
+      
+      // Check if location has been relocated (contains "(_ChangeSlot)")
+      let isRelocated = false;
+      if (location && location.includes('(_ChangeSlot)')) {
+        isRelocated = true;
+        // Remove (_ChangeSlot) from location text (handle various formats)
+        location = location.replace(/\s*\(_ChangeSlot\)\s*/gi, '').trim();
+      }
+      
+      // Extract EduNext URL if present (check for both fu-edunext and edunext domains)
+      let edunextUrl = null;
+      const edunextLink = container.querySelector('a[href*="edunext.fpt.edu.vn"]');
+      if (edunextLink) {
+        edunextUrl = edunextLink.href;
+      }
+      
+      // Clean location text - remove any remaining EduNext references and other artifacts
+      // Remove "-EduNext" text (with various spacing) - in case it wasn't caught by regex
+      location = location.replace(/\s*-\s*EduNext\s*/gi, '').trim();
+      // Remove any trailing dashes or spaces
+      location = location.replace(/\s*-\s*$/, '').trim();
+      // Remove any double spaces
+      location = location.replace(/\s+/g, ' ').trim();
       
       // Extract time from label-success span
       const timeSpan = container.querySelector('span.label.label-success');
@@ -178,6 +203,8 @@
         location: location || '',
         isOnline,
         meetUrl: meetUrl,
+        edunextUrl: edunextUrl,
+        isRelocated: isRelocated,
         status,
         activityId
       };

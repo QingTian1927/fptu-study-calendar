@@ -327,6 +327,7 @@
       align-items: stretch;
       justify-content: flex-start;
       min-height: 32px;
+      height: 100%;
     }
 
     /* ========================================
@@ -344,13 +345,33 @@
       text-align: left;
       display: flex;
       flex-direction: column;
-      gap: var(--space-xs);
+      gap: 0;
       margin-bottom: var(--space-xs);
       box-sizing: border-box;
+      flex: 1 1 auto;
+      min-height: fit-content;
     }
-
+    
     .class-block:last-child {
       margin-bottom: 0;
+      flex: 1 1 0;
+    }
+    
+    /* Main content area - grows to fill space */
+    .class-content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      flex: 1 1 auto;
+    }
+    
+    /* Header: subject code + badges */
+    .class-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
     }
 
     /* Hover effect: subtle lift and slight brightness change */
@@ -360,72 +381,125 @@
       transform: translateY(-1px);
     }
 
-    /* Text colors adapt based on background (set via inline styles) */
+    /* Typography hierarchy */
     .class-name {
-      font-weight: var(--font-weight-semibold);
-      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      font-size: var(--font-size-base);
       /* Color set via inline style on parent */
       line-height: var(--line-height-tight);
+      letter-spacing: -0.01em;
+    }
+    
+    /* Metadata section: location and time */
+    .class-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     /* Secondary text: use semi-transparent white on dark backgrounds, muted color on light */
-    .class-block[data-text-color="light"] .class-location,
-    .class-block[data-text-color="light"] .class-time {
-      color: rgba(255, 255, 255, 0.85);
+    .class-block[data-text-color="light"] .class-location {
+      color: rgba(255, 255, 255, 0.75);
     }
 
-    .class-block[data-text-color="dark"] .class-location,
+    .class-block[data-text-color="dark"] .class-location {
+      color: var(--color-text-tertiary);
+    }
+    
+    .class-location {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-normal);
+      line-height: var(--line-height-normal);
+    }
+    
+    /* Time: more prominent than location but less than subject code */
+    .class-block[data-text-color="light"] .class-time {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
     .class-block[data-text-color="dark"] .class-time {
       color: var(--color-text-secondary);
     }
 
-    .class-location {
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-normal);
-    }
-
     .class-time {
       font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-normal);
+      font-weight: var(--font-weight-semibold);
+      line-height: var(--line-height-normal);
+      letter-spacing: 0.01em;
     }
 
-    /* Online indicator: use base color for better visibility */
-    .class-block[data-text-color="light"] .class-online-indicator {
+    /* Badge group: Online + Relocated badges */
+    .class-badges {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    
+    .class-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    
+    .class-badge-online {
+      background: rgba(16, 185, 129, 0.15);
+      color: #059669;
+    }
+    
+    .class-block[data-text-color="light"] .class-badge-online {
+      background: rgba(255, 255, 255, 0.2);
       color: rgba(255, 255, 255, 0.95);
     }
-
-    .class-block[data-text-color="dark"] .class-online-indicator {
-      /* Use the base color from CSS custom property */
-      color: var(--base-color, var(--color-accent));
+    
+    .class-badge-relocated {
+      background: #f59e0b;
+      color: #ffffff;
+    }
+    
+    .class-block[data-text-color="light"] .class-badge-relocated {
+      background: rgba(245, 158, 11, 0.9);
+      color: #ffffff;
     }
 
-    .class-online-indicator {
-      font-size: var(--font-size-xs);
+    /* Links section: pushed to bottom via flexbox */
+    .class-links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-top: auto;
+      padding-top: var(--space-xs);
+      flex-wrap: wrap;
+    }
+
+    .class-link {
+      font-size: 11px;
+      text-decoration: none;
       font-weight: var(--font-weight-medium);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      opacity: 0.85;
+      transition: opacity var(--transition-base);
     }
 
-    /* Meet link: use light blue/cyan on dark backgrounds, accent on light */
-    .class-block[data-text-color="light"] .class-meet-link {
-      color: rgba(173, 216, 230, 1); /* Light blue for visibility on dark */
+    .class-block[data-text-color="light"] .class-link {
+      color: rgba(173, 216, 230, 0.9);
     }
 
-    .class-block[data-text-color="dark"] .class-meet-link {
+    .class-block[data-text-color="dark"] .class-link {
       color: var(--color-accent);
     }
 
-    .class-meet-link {
-      font-size: var(--font-size-xs);
-      text-decoration: none;
-      font-weight: var(--font-weight-medium);
-      display: inline-block;
-      margin-top: var(--space-xs);
-    }
-
-    .class-meet-link:hover {
+    .class-link:hover {
       text-decoration: underline;
-      opacity: 0.8;
+      opacity: 1;
     }
 
     /* ========================================

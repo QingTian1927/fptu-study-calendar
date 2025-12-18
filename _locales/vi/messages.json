@@ -138,6 +138,14 @@
   "overlayDismiss": {
     "message": "Đóng",
     "description": "Nút đóng overlay"
+  },
+  "classRelocated": {
+    "message": "Đã đổi slot",
+    "description": "Badge hiển thị khi lớp đã được đổi slot"
+  },
+  "classEduNext": {
+    "message": "EduNext",
+    "description": "Link đến EduNext"
   }
 }
 
