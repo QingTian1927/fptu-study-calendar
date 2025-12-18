@@ -266,9 +266,20 @@
       border: var(--border-width) solid var(--color-border);
       border-radius: var(--border-radius-md);
       background: var(--color-border);
-      gap: var(--border-width);
+      column-gap: var(--border-width);
+      row-gap: 0;
       overflow-x: auto;
       overflow: hidden;
+    }
+    
+    .week-grid > .time-slot,
+    .week-grid > .day-cell {
+      margin-top: var(--border-width);
+    }
+    
+    .week-grid > .time-slot:first-of-type,
+    .week-grid > .day-cell:first-of-type {
+      margin-top: 0;
     }
 
     .time-slot {
@@ -293,7 +304,16 @@
       flex-direction: column;
       justify-content: center;
       gap: var(--space-xs);
-      border-bottom: var(--border-width) solid var(--color-border);
+    }
+    
+    /* Week view: no margin/border to remove gray stripe */
+    .week-grid .day-header {
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+    
+    .day-header.today {
+      background: var(--color-accent-light);
     }
 
     .day-header-name {
@@ -328,6 +348,11 @@
       justify-content: flex-start;
       min-height: 32px;
       height: 100%;
+      border-top: var(--border-width) solid var(--color-border);
+    }
+    
+    .day-cell:first-of-type {
+      border-top: 0;
     }
 
     /* ========================================
@@ -517,20 +542,174 @@
     .list-view.active {
       display: block;
     }
+    
+    .list-view-container {
+      display: flex;
+      gap: var(--space-xl);
+      align-items: flex-start;
+    }
+    
+    .list-content {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    
+    .list-sidebar {
+      flex: 0 0 280px;
+      background: var(--color-surface);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      padding: var(--space-lg);
+      position: sticky;
+      top: var(--space-lg);
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+    
+    .sidebar-section {
+      margin-bottom: var(--space-xl);
+    }
+    
+    .sidebar-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .sidebar-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .sidebar-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: var(--space-sm) 0;
+    }
+    
+    .stat-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+    
+    .stat-value {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+    }
+    
+    .subject-counts {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    
+    .subject-count-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--border-radius-sm);
+      background: var(--color-gray-50);
+      font-size: var(--font-size-sm);
+    }
+    
+    .subject-count-code {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+    
+    .subject-count-number {
+      color: var(--color-text-secondary);
+    }
+    
+    .filter-group {
+      margin-bottom: var(--space-md);
+    }
+    
+    .filter-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .filter-label {
+      display: block;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .filter-select {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--border-radius-md);
+      background: var(--color-surface);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color var(--transition-base);
+    }
+    
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+    }
+    
+    /* Day group header */
+    .day-group {
+      margin-bottom: var(--space-lg);
+    }
+    
+    .day-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .day-header {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      padding: var(--space-sm) 0;
+      margin-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+    
+    .day-header-date {
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-normal);
+    }
+    
+    .day-classes {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
 
     .week-view.hidden {
       display: none;
     }
 
     .class-item {
-      padding: var(--space-lg);
-      padding-left: calc(var(--space-lg) - 4px); /* Account for left border */
-      border-bottom: var(--border-width) solid var(--color-border);
-      border-left: 4px solid transparent; /* Color set via inline style */
-      border-radius: var(--border-radius-sm);
+      padding: var(--space-md) var(--space-lg);
+      border-left: 4px solid;
+      /* Background and border colors are set dynamically via inline styles */
+      border-radius: var(--border-radius-md);
       cursor: pointer;
-      transition: background-color var(--transition-base);
-      margin-bottom: var(--space-xs);
+      transition: opacity var(--transition-base), filter var(--transition-base), transform var(--transition-base);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      box-sizing: border-box;
     }
 
     .class-item:last-child {
@@ -538,39 +717,56 @@
     }
 
     .class-item:hover {
-      background: var(--color-gray-50);
+      opacity: 0.92;
+      filter: brightness(0.96);
+      transform: translateY(-1px);
     }
-
-    .class-item:last-child {
-      border-bottom: none;
-    }
-
-    .class-item-header {
+    
+    /* Reuse calendar view styles for consistency */
+    .class-item .class-content {
       display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: var(--space-sm);
+      flex-direction: column;
+      gap: var(--space-xs);
+      flex: 1 1 auto;
+    }
+    
+    .class-item .class-header {
+      display: flex;
+      align-items: center;
       gap: var(--space-md);
+      flex-wrap: wrap;
     }
-
-    .class-item-name {
-      font-weight: var(--font-weight-semibold);
-      font-size: var(--font-size-md);
-      color: var(--color-text-primary);
-      line-height: var(--line-height-tight);
+    
+    /* List view: time next to subject code for primary cluster */
+    .class-item .class-header .class-name {
+      flex: 0 0 auto;
     }
-
-    .class-item-time {
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
+    
+    .class-item .class-header .class-time {
       white-space: nowrap;
+      flex-shrink: 0;
+      flex: 0 0 auto;
     }
-
-    .class-item-details {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-tertiary);
-      line-height: var(--line-height-normal);
+    
+    .class-item .class-header .class-badges {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    
+    .class-item .class-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .class-item .class-links {
+      margin-top: var(--space-xs);
+      padding-top: var(--space-xs);
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .class-item[data-text-color="light"] .class-links {
+      border-top-color: rgba(255, 255, 255, 0.1);
     }
 
     /* ========================================
@@ -729,67 +925,99 @@
       <div class="header-subtitle" id="headerSubtitle">Chọn tuần để xem lịch học</div>
     </div>
     <div class="view-controls">
-      <button id="weekViewBtn" class="btn btn-outline active">Tuần</button>
-      <button id="listViewBtn" class="btn btn-outline">Danh sách</button>
-      <button id="exportBtn" class="btn btn-primary">Xuất file .ics</button>
+      <button id="weekViewBtn" class="btn btn-outline active" data-i18n="viewWeek">Tuần</button>
+      <button id="listViewBtn" class="btn btn-outline" data-i18n="viewList">Danh sách</button>
+      <button id="exportBtn" class="btn btn-primary" data-i18n="exportIcs">Xuất file .ics</button>
     </div>
   </div>
 
   <div id="weekView" class="week-view">
     <div class="week-navigation">
-      <button id="prevWeekBtn" class="btn btn-outline">← Tuần trước</button>
+      <button id="prevWeekBtn" class="btn btn-outline"><span data-i18n="prevWeek">← Tuần trước</span></button>
       <select id="weekSelector" class="week-selector"></select>
-      <button id="nextWeekBtn" class="btn btn-outline">Tuần sau →</button>
+      <button id="nextWeekBtn" class="btn btn-outline"><span data-i18n="nextWeek">Tuần sau →</span></button>
     </div>
     <div id="weekGrid" class="week-grid"></div>
   </div>
 
   <div id="listView" class="list-view">
-    <div id="listContent"></div>
+    <div class="list-view-container">
+      <div id="listContent" class="list-content"></div>
+      <div id="listSidebar" class="list-sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title" data-i18n="sidebarOverview">Tổng quan</div>
+          <div class="sidebar-stat">
+            <span class="stat-label" data-i18n="sidebarTotalClasses">Tổng số lớp</span>
+            <span class="stat-value" id="totalClassCount">0</span>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title" data-i18n="sidebarBySubject">Theo môn học</div>
+          <div id="subjectCounts" class="subject-counts"></div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title" data-i18n="sidebarFilter">Lọc</div>
+          <div class="filter-group">
+            <label class="filter-label" data-i18n="filterSubject">Môn học</label>
+            <select id="subjectFilter" class="filter-select">
+              <option value="all" data-i18n="filterAll">Tất cả</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" data-i18n="filterStatus">Trạng thái</label>
+            <select id="statusFilter" class="filter-select">
+              <option value="all" data-i18n="filterAll">Tất cả</option>
+              <option value="online" data-i18n="filterOnline">Trực tuyến</option>
+              <option value="offline" data-i18n="filterOffline">Trực tiếp</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="editModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Chỉnh sửa lớp học</h2>
+        <h2 data-i18n="editModalTitle">Chỉnh sửa lớp học</h2>
       </div>
       <form id="editForm">
         <div class="form-group">
-          <label>Mã môn học:</label>
+          <label data-i18n="editSubjectCode">Mã môn học:</label>
           <input type="text" id="editSubjectCode" required>
         </div>
         <div class="form-group">
-          <label>Ngày:</label>
+          <label data-i18n="editDate">Ngày:</label>
           <input type="date" id="editDate" required>
         </div>
         <div class="form-group">
-          <label>Giờ bắt đầu:</label>
+          <label data-i18n="editTimeStart">Giờ bắt đầu:</label>
           <input type="time" id="editTimeStart" required>
         </div>
         <div class="form-group">
-          <label>Giờ kết thúc:</label>
+          <label data-i18n="editTimeEnd">Giờ kết thúc:</label>
           <input type="time" id="editTimeEnd" required>
         </div>
         <div class="form-group">
-          <label>Địa điểm:</label>
+          <label data-i18n="editLocation">Địa điểm:</label>
           <input type="text" id="editLocation">
         </div>
         <div class="form-group">
-          <label>Meet URL:</label>
+          <label data-i18n="editMeetUrl">Meet URL:</label>
           <input type="url" id="editMeetUrl">
         </div>
         <div class="form-group">
-          <label>Trạng thái:</label>
+          <label data-i18n="editStatus">Trạng thái:</label>
           <select id="editStatus">
-            <option value="Not yet">Chưa diễn ra</option>
-            <option value="attended">Đã tham gia</option>
-            <option value="absent">Vắng mặt</option>
+            <option value="Not yet" data-i18n="statusNotYet">Chưa diễn ra</option>
+            <option value="attended" data-i18n="statusAttended">Đã tham gia</option>
+            <option value="absent" data-i18n="statusAbsent">Vắng mặt</option>
           </select>
         </div>
         <div class="form-actions">
-          <button type="button" id="deleteBtn" class="btn btn-danger">Xóa</button>
-          <button type="button" id="cancelBtn" class="btn btn-outline">Hủy</button>
-          <button type="submit" class="btn btn-primary">Lưu</button>
+          <button type="button" id="deleteBtn" class="btn btn-danger" data-i18n="buttonDelete">Xóa</button>
+          <button type="button" id="cancelBtn" class="btn btn-outline" data-i18n="buttonCancel">Hủy</button>
+          <button type="submit" class="btn btn-primary" data-i18n="buttonSave">Lưu</button>
         </div>
       </form>
     </div>

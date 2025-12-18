@@ -501,47 +501,226 @@ function createClassBlock(cls) {
   return block;
 }
 
+// Get filtered classes based on current filter values
+function getFilteredClasses() {
+  const subjectFilter = document.getElementById('subjectFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  
+  const selectedSubject = subjectFilter ? subjectFilter.value : 'all';
+  const selectedStatus = statusFilter ? statusFilter.value : 'all';
+  
+  let filtered = [...allClasses];
+  
+  // Filter by subject
+  if (selectedSubject !== 'all') {
+    filtered = filtered.filter(cls => cls.subjectCode === selectedSubject);
+  }
+  
+  // Filter by online/offline status
+  if (selectedStatus !== 'all') {
+    if (selectedStatus === 'online') {
+      filtered = filtered.filter(cls => cls.isOnline === true);
+    } else if (selectedStatus === 'offline') {
+      filtered = filtered.filter(cls => cls.isOnline !== true);
+    }
+  }
+  
+  return filtered;
+}
+
 // Render list view
 function renderListView() {
   const listContent = document.getElementById('listContent');
   listContent.innerHTML = '';
 
-  if (allClasses.length === 0) {
-    listContent.innerHTML = '<div class="empty-state">Không có lớp học nào</div>';
+  // Get filtered classes
+  const filteredClasses = getFilteredClasses();
+
+  if (filteredClasses.length === 0) {
+    listContent.innerHTML = `<div class="empty-state">${getMessage('emptyState')}</div>`;
+    updateListSidebar([]);
     return;
   }
 
   // Sort classes by date and time
-  const sortedClasses = [...allClasses].sort((a, b) => {
+  const sortedClasses = filteredClasses.sort((a, b) => {
     const dateA = new Date(a.date + 'T' + a.time.start);
     const dateB = new Date(b.date + 'T' + b.time.start);
     return dateA - dateB;
   });
 
+  // Group classes by day
+  const classesByDay = {};
   sortedClasses.forEach(cls => {
-    const item = createElement('div', 'class-item', '');
-    
-    // Get assigned base color for this class
-    const baseColor = getClassColor(cls.subjectCode, cls.isOnline);
-    
-    // Apply colors via inline styles (list view uses border only, no background tint)
-    item.style.borderLeftColor = baseColor;
-    item.style.borderLeftWidth = '4px';
-    item.style.borderLeftStyle = 'solid';
-    item.style.setProperty('--base-color', baseColor);
-    
-    item.innerHTML = `
-      <div class="class-item-header">
-        <div class="class-item-name">${cls.subjectCode}</div>
-        <div class="class-item-time">${cls.time.start} - ${cls.time.end}</div>
-      </div>
-      <div class="class-item-details">
-        ${formatDate(cls.date)} • ${cls.location || 'N/A'} ${cls.isOnline ? '• Online' : ''}
-      </div>
-    `;
-    item.addEventListener('click', () => openEditModal(cls));
-    listContent.appendChild(item);
+    const dateKey = cls.date;
+    if (!classesByDay[dateKey]) {
+      classesByDay[dateKey] = [];
+    }
+    classesByDay[dateKey].push(cls);
   });
+
+  // Render day groups
+  Object.keys(classesByDay).sort().forEach(dateKey => {
+    const dayClasses = classesByDay[dateKey];
+    const firstClass = dayClasses[0];
+    const date = new Date(firstClass.date);
+    
+    // Get day name in Vietnamese
+    const dayNames = [
+      getMessage('daySunday'),
+      getMessage('dayMonday'),
+      getMessage('dayTuesday'),
+      getMessage('dayWednesday'),
+      getMessage('dayThursday'),
+      getMessage('dayFriday'),
+      getMessage('daySaturday')
+    ];
+    const dayName = dayNames[date.getDay()];
+    const formattedDate = formatDate(firstClass.date);
+    
+    // Create day group
+    const dayGroup = createElement('div', 'day-group', '');
+    const dayHeader = createElement('div', 'day-header', '');
+    dayHeader.innerHTML = `
+      <span>${dayName}</span>
+      <span class="day-header-date">${formattedDate}</span>
+    `;
+    
+    const dayClassesContainer = createElement('div', 'day-classes', '');
+    
+    dayClasses.forEach(cls => {
+      const item = createElement('div', 'class-item', '');
+      
+      // Get assigned base color for this class
+      const baseColor = getClassColor(cls.subjectCode, cls.isOnline);
+      
+      // Use tinted background for consistency with calendar view
+      const bgColor = getTintedBackground(baseColor, cls.isOnline);
+      const textColor = getTextColor(bgColor);
+      
+      // Apply colors via inline styles (consistent with calendar view)
+      item.style.backgroundColor = bgColor;
+      item.style.borderLeftColor = baseColor;
+      item.style.borderLeftWidth = '4px';
+      item.style.borderLeftStyle = 'solid';
+      item.style.color = textColor === 'light' ? '#ffffff' : 'var(--color-text-primary)';
+      item.style.setProperty('--base-color', baseColor);
+      item.dataset.textColor = textColor;
+      item.dataset.baseColor = baseColor;
+      
+      const timeStr = `${cls.time.start} - ${cls.time.end}`;
+      
+      // Build badge group (Online + Relocated) - same as calendar view
+      let badgesHtml = '';
+      if (cls.isOnline || cls.isRelocated) {
+        badgesHtml = '<div class="class-badges">';
+        if (cls.isOnline) {
+          badgesHtml += `<span class="class-badge class-badge-online">● Online</span>`;
+        }
+        if (cls.isRelocated === true) {
+          badgesHtml += `<span class="class-badge class-badge-relocated">${getMessage('classRelocated')}</span>`;
+        }
+        badgesHtml += '</div>';
+      }
+      
+      // Build links section (Materials, Meet, and EduNext) - same as calendar view
+      let linksHtml = '';
+      if (cls.materialsUrl) {
+        linksHtml += `<a href="${cls.materialsUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📄 ${getMessage('classMaterials')}</a>`;
+      }
+      if (cls.isOnline && cls.meetUrl) {
+        if (linksHtml) linksHtml += ' ';
+        linksHtml += `<a href="${cls.meetUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">🔗 Meet</a>`;
+      }
+      if (cls.edunextUrl) {
+        if (linksHtml) linksHtml += ' ';
+        linksHtml += `<a href="${cls.edunextUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📚 ${getMessage('classEduNext')}</a>`;
+      }
+      
+      // Use same structure as calendar view for consistency, optimized for list scanning
+      item.innerHTML = `
+        <div class="class-content">
+          <div class="class-header">
+            <div class="class-name">${cls.subjectCode}</div>
+            <div class="class-time">${timeStr}</div>
+            ${badgesHtml}
+          </div>
+          <div class="class-meta">
+            <div class="class-location">${cls.location || 'N/A'}</div>
+          </div>
+        </div>
+        ${linksHtml ? `<div class="class-links">${linksHtml}</div>` : ''}
+      `;
+      item.addEventListener('click', () => openEditModal(cls));
+      dayClassesContainer.appendChild(item);
+    });
+    
+    dayGroup.appendChild(dayHeader);
+    dayGroup.appendChild(dayClassesContainer);
+    listContent.appendChild(dayGroup);
+  });
+  
+  // Update sidebar with statistics
+  updateListSidebar(sortedClasses);
+}
+
+// Update list sidebar with statistics
+function updateListSidebar(filteredClasses) {
+  // Update total count (for filtered classes)
+  const totalCount = filteredClasses.length;
+  document.getElementById('totalClassCount').textContent = totalCount;
+  
+  // Calculate subject counts (for filtered classes - shown in statistics)
+  const subjectCounts = {};
+  filteredClasses.forEach(cls => {
+    if (!subjectCounts[cls.subjectCode]) {
+      subjectCounts[cls.subjectCode] = 0;
+    }
+    subjectCounts[cls.subjectCode]++;
+  });
+  
+  // Render subject counts (for filtered classes)
+  const subjectCountsContainer = document.getElementById('subjectCounts');
+  subjectCountsContainer.innerHTML = '';
+  
+  const sortedFilteredSubjects = Object.keys(subjectCounts).sort();
+  sortedFilteredSubjects.forEach(subjectCode => {
+    const count = subjectCounts[subjectCode];
+    const item = createElement('div', 'subject-count-item', '');
+    item.innerHTML = `
+      <span class="subject-count-code">${subjectCode}</span>
+      <span class="subject-count-number">${count}</span>
+    `;
+    subjectCountsContainer.appendChild(item);
+  });
+  
+  // Update subject filter dropdown (always show all available subjects from allClasses)
+  const subjectFilter = document.getElementById('subjectFilter');
+  if (subjectFilter) {
+    const currentValue = subjectFilter.value;
+    
+    // Get all unique subjects from allClasses
+    const allSubjects = new Set();
+    allClasses.forEach(cls => {
+      allSubjects.add(cls.subjectCode);
+    });
+    const sortedAllSubjects = Array.from(allSubjects).sort();
+    
+    subjectFilter.innerHTML = `<option value="all">${getMessage('filterAll')}</option>`;
+    sortedAllSubjects.forEach(subjectCode => {
+      const option = createElement('option', '', '');
+      option.value = subjectCode;
+      option.textContent = subjectCode;
+      subjectFilter.appendChild(option);
+    });
+    
+    // Restore previous selection if it still exists
+    if (currentValue && (currentValue === 'all' || sortedAllSubjects.includes(currentValue))) {
+      subjectFilter.value = currentValue;
+    } else {
+      subjectFilter.value = 'all';
+    }
+  }
 }
 
 // Render calendar (switch between views)
@@ -556,8 +735,9 @@ function renderCalendar() {
 
 // Show empty state
 function showEmptyState() {
-  document.getElementById('weekGrid').innerHTML = '<div class="empty-state">Không có lớp học nào</div>';
-  document.getElementById('listContent').innerHTML = '<div class="empty-state">Không có lớp học nào</div>';
+  const emptyMessage = getMessage('emptyState');
+  document.getElementById('weekGrid').innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
+  document.getElementById('listContent').innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
 }
 
 // Open edit modal
@@ -619,7 +799,7 @@ async function saveEditedClass(formData) {
 async function deleteClass() {
   if (!currentEditingClass) return;
 
-  if (confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
+  if (confirm(getMessage('confirmDeleteClass'))) {
     allClasses = allClasses.filter(c => c.activityId !== currentEditingClass.activityId);
     await saveClasses();
     renderCalendar();
@@ -635,8 +815,28 @@ function createElement(tag, className, textContent) {
   return el;
 }
 
+// Initialize i18n for elements with data-i18n attribute
+function initI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key) {
+      const message = getMessage(key);
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = message;
+      } else if (el.tagName === 'OPTION') {
+        el.textContent = message;
+      } else {
+        el.textContent = message;
+      }
+    }
+  });
+}
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize i18n
+  initI18n();
+  
   loadClasses();
 
   // View toggle
@@ -655,6 +855,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('listView').classList.add('active');
     renderListView();
   });
+
+  // List view filters
+  const subjectFilter = document.getElementById('subjectFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  
+  if (subjectFilter) {
+    subjectFilter.addEventListener('change', () => {
+      renderListView();
+    });
+  }
+  
+  if (statusFilter) {
+    statusFilter.addEventListener('change', () => {
+      renderListView();
+    });
+  }
 
   // Week navigation
   document.getElementById('prevWeekBtn').addEventListener('click', () => {

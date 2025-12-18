@@ -150,6 +150,154 @@
   "classMaterials": {
     "message": "Tài liệu",
     "description": "Link đến tài liệu học tập"
+  },
+  "viewWeek": {
+    "message": "Tuần",
+    "description": "Nút chuyển sang chế độ xem tuần"
+  },
+  "viewList": {
+    "message": "Danh sách",
+    "description": "Nút chuyển sang chế độ xem danh sách"
+  },
+  "exportIcs": {
+    "message": "Xuất file .ics",
+    "description": "Nút xuất file .ics"
+  },
+  "prevWeek": {
+    "message": "← Tuần trước",
+    "description": "Nút chuyển sang tuần trước"
+  },
+  "nextWeek": {
+    "message": "Tuần sau →",
+    "description": "Nút chuyển sang tuần sau"
+  },
+  "sidebarOverview": {
+    "message": "Tổng quan",
+    "description": "Tiêu đề phần tổng quan trong sidebar"
+  },
+  "sidebarTotalClasses": {
+    "message": "Tổng số lớp",
+    "description": "Nhãn tổng số lớp học"
+  },
+  "sidebarBySubject": {
+    "message": "Theo môn học",
+    "description": "Tiêu đề phần theo môn học trong sidebar"
+  },
+  "sidebarFilter": {
+    "message": "Lọc",
+    "description": "Tiêu đề phần lọc trong sidebar"
+  },
+  "filterSubject": {
+    "message": "Môn học",
+    "description": "Nhãn bộ lọc môn học"
+  },
+  "filterStatus": {
+    "message": "Trạng thái",
+    "description": "Nhãn bộ lọc trạng thái"
+  },
+  "filterAll": {
+    "message": "Tất cả",
+    "description": "Tùy chọn 'Tất cả' trong bộ lọc"
+  },
+  "filterOnline": {
+    "message": "Trực tuyến",
+    "description": "Tùy chọn 'Trực tuyến' trong bộ lọc"
+  },
+  "filterOffline": {
+    "message": "Trực tiếp",
+    "description": "Tùy chọn 'Trực tiếp' trong bộ lọc"
+  },
+  "emptyState": {
+    "message": "Không có lớp học nào",
+    "description": "Thông báo khi không có lớp học"
+  },
+  "daySunday": {
+    "message": "Chủ nhật",
+    "description": "Tên ngày Chủ nhật"
+  },
+  "dayMonday": {
+    "message": "Thứ hai",
+    "description": "Tên ngày Thứ hai"
+  },
+  "dayTuesday": {
+    "message": "Thứ ba",
+    "description": "Tên ngày Thứ ba"
+  },
+  "dayWednesday": {
+    "message": "Thứ tư",
+    "description": "Tên ngày Thứ tư"
+  },
+  "dayThursday": {
+    "message": "Thứ năm",
+    "description": "Tên ngày Thứ năm"
+  },
+  "dayFriday": {
+    "message": "Thứ sáu",
+    "description": "Tên ngày Thứ sáu"
+  },
+  "daySaturday": {
+    "message": "Thứ bảy",
+    "description": "Tên ngày Thứ bảy"
+  },
+  "editModalTitle": {
+    "message": "Chỉnh sửa lớp học",
+    "description": "Tiêu đề modal chỉnh sửa lớp học"
+  },
+  "editSubjectCode": {
+    "message": "Mã môn học:",
+    "description": "Nhãn mã môn học trong form chỉnh sửa"
+  },
+  "editDate": {
+    "message": "Ngày:",
+    "description": "Nhãn ngày trong form chỉnh sửa"
+  },
+  "editTimeStart": {
+    "message": "Giờ bắt đầu:",
+    "description": "Nhãn giờ bắt đầu trong form chỉnh sửa"
+  },
+  "editTimeEnd": {
+    "message": "Giờ kết thúc:",
+    "description": "Nhãn giờ kết thúc trong form chỉnh sửa"
+  },
+  "editLocation": {
+    "message": "Địa điểm:",
+    "description": "Nhãn địa điểm trong form chỉnh sửa"
+  },
+  "editMeetUrl": {
+    "message": "Meet URL:",
+    "description": "Nhãn Meet URL trong form chỉnh sửa"
+  },
+  "editStatus": {
+    "message": "Trạng thái:",
+    "description": "Nhãn trạng thái trong form chỉnh sửa"
+  },
+  "statusNotYet": {
+    "message": "Chưa diễn ra",
+    "description": "Trạng thái 'Chưa diễn ra'"
+  },
+  "statusAttended": {
+    "message": "Đã tham gia",
+    "description": "Trạng thái 'Đã tham gia'"
+  },
+  "statusAbsent": {
+    "message": "Vắng mặt",
+    "description": "Trạng thái 'Vắng mặt'"
+  },
+  "buttonDelete": {
+    "message": "Xóa",
+    "description": "Nút xóa"
+  },
+  "buttonCancel": {
+    "message": "Hủy",
+    "description": "Nút hủy"
+  },
+  "buttonSave": {
+    "message": "Lưu",
+    "description": "Nút lưu"
+  },
+  "confirmDeleteClass": {
+    "message": "Bạn có chắc chắn muốn xóa lớp học này?",
+    "description": "Xác nhận xóa lớp học"
   }
 }
 
