@@ -420,81 +420,299 @@ async function selectWeek(tabId, weekValue, waitTime) {
   }
 }
 
+// Helper function to send message to content script
+async function sendMessageToContentScript(tabId, message) {
+  try {
+    await chrome.tabs.sendMessage(tabId, message);
+  } catch (error) {
+    // Ignore errors if content script isn't ready or tab is closed
+    console.log('Could not send message to content script:', error.message);
+  }
+}
+
+// Inject minimal overlay script immediately (runs before full content script)
+// This ensures overlay appears instantly on page load
+async function injectMinimalOverlay(tabId, title, message, dismissText, progressText, extensionName) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (title, message, dismissText, progressText, extensionName) => {
+        // Function to create overlay
+        const createOverlayNow = () => {
+          // Check if overlay already exists
+          if (document.getElementById('fptu-calendar-overlay')) {
+            return;
+          }
+          
+          // Check sessionStorage
+          const isScraping = sessionStorage.getItem('fptu_scraping_active') === 'true';
+          if (!isScraping && !title) {
+            return; // Don't show if not scraping
+          }
+          
+          // Use provided values or fallback to sessionStorage
+          // Note: sessionStorage is accessed here (in page context), not in background script
+          const overlayTitle = title || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fptu_overlay_title') : null) || 'Đang trích xuất lịch học';
+          const overlayMessage = message || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fptu_overlay_message') : null) || 'Đang trích xuất lịch học cho bạn...';
+          const overlayDismiss = dismissText || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fptu_overlay_dismiss') : null) || 'Đóng';
+          const overlayProgress = progressText || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fptu_scraping_progress') : null) || '';
+          const extName = extensionName || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fptu_extension_name') : null) || 'FPTU Study Calendar';
+          
+          // Create style element if it doesn't exist
+          let styleEl = document.getElementById('fptu-calendar-overlay-style');
+          if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'fptu-calendar-overlay-style';
+            styleEl.textContent = `
+              #fptu-calendar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.75);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 999999;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              }
+              #fptu-calendar-overlay .overlay-content {
+                background: #ffffff;
+                border-radius: 12px;
+                padding: 32px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                text-align: center;
+              }
+              #fptu-calendar-overlay .overlay-extension-name {
+                font-size: 12px;
+                font-weight: 500;
+                color: #10b981;
+                margin-bottom: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              }
+              #fptu-calendar-overlay .overlay-title {
+                font-size: 20px;
+                font-weight: 600;
+                color: #171717;
+                margin-bottom: 8px;
+                line-height: 1.2;
+              }
+              #fptu-calendar-overlay .overlay-message {
+                font-size: 14px;
+                color: #525252;
+                margin-bottom: 24px;
+                line-height: 1.5;
+              }
+              #fptu-calendar-overlay .overlay-progress {
+                font-size: 16px;
+                font-weight: 500;
+                color: #10b981;
+                margin-bottom: 24px;
+                min-height: 24px;
+              }
+              #fptu-calendar-overlay .spinner {
+                width: 40px;
+                height: 40px;
+                margin: 0 auto 24px;
+                border: 4px solid #e5e5e5;
+                border-top-color: #10b981;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+              }
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+              #fptu-calendar-overlay .overlay-button {
+                background: #10b981;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                font-family: inherit;
+                display: block;
+                margin: 0 auto;
+              }
+              #fptu-calendar-overlay .overlay-button:hover {
+                background: #059669;
+              }
+              #fptu-calendar-overlay .overlay-button:active {
+                transform: scale(0.98);
+              }
+              #fptu-calendar-overlay.complete .spinner {
+                display: none;
+              }
+              #fptu-calendar-overlay.complete .overlay-progress {
+                color: #10b981;
+                font-weight: 600;
+              }
+            `;
+            (document.head || document.documentElement).appendChild(styleEl);
+          }
+          
+          // Create overlay element
+          const overlay = document.createElement('div');
+          overlay.id = 'fptu-calendar-overlay';
+          overlay.innerHTML = `
+            <div class="overlay-content">
+              <div class="overlay-extension-name">${extName}</div>
+              <div class="overlay-title">${overlayTitle}</div>
+              <div class="overlay-message">${overlayMessage}</div>
+              <div class="spinner"></div>
+              <div class="overlay-progress">${overlayProgress}</div>
+              <button class="overlay-button" id="overlay-dismiss" style="display: none;">${overlayDismiss}</button>
+            </div>
+          `;
+          
+          // Add dismiss handler
+          overlay.querySelector('#overlay-dismiss').addEventListener('click', () => {
+            overlay.remove();
+          });
+          
+          // Append to body (or documentElement if body doesn't exist yet)
+          const target = document.body || document.documentElement;
+          target.appendChild(overlay);
+        };
+        
+        // Try to create immediately
+        if (document.readyState === 'loading') {
+          // If still loading, wait for DOMContentLoaded
+          if (document.addEventListener) {
+            document.addEventListener('DOMContentLoaded', createOverlayNow, { once: true });
+          } else {
+            // Fallback for older browsers
+            const checkReady = setInterval(() => {
+              if (document.readyState !== 'loading') {
+                clearInterval(checkReady);
+                createOverlayNow();
+              }
+            }, 10);
+          }
+        } else {
+          // DOM is ready, create immediately
+          createOverlayNow();
+        }
+      },
+      args: [title, message, dismissText, progressText, extensionName],
+      world: 'MAIN' // Run in main world for immediate execution
+    });
+  } catch (error) {
+    console.log('Could not inject minimal overlay:', error.message);
+  }
+}
+
+// Track active scraping sessions for overlay injection
+const activeScrapingTabs = new Map(); // tabId -> { title, message, dismissText }
+
+// Listen for tab updates to inject overlay immediately when page starts loading
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only handle timetable page
+  if (!tab.url || !tab.url.includes('ScheduleOfWeek.aspx')) {
+    return;
+  }
+  
+  // If page is starting to load and we have active scraping for this tab
+  if (changeInfo.status === 'loading' && activeScrapingTabs.has(tabId)) {
+    const overlayData = activeScrapingTabs.get(tabId);
+    
+    // Inject overlay immediately (don't wait)
+    // Progress text will be read from sessionStorage inside the injected script
+    injectMinimalOverlay(tabId, overlayData.title, overlayData.message, overlayData.dismissText, null, overlayData.extensionName).catch(() => {
+      // Ignore errors - will retry when page loads
+    });
+  }
+});
+
 // Main scraping function
 async function startScraping(startDate, endDate, waitTime) {
   const errors = [];
   const allWeeksData = [];
+  let timetableTab = null;
   
   try {
-    // Get or create tab
-    let tab = await getCurrentTab();
+    // Always create a new tab for FAP homepage
+    const homeTab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
+    await new Promise(resolve => setTimeout(resolve, waitTime));
     
-    // Check if already on timetable page
-    let alreadyOnTimetable = false;
-    if (tab && tab.url && tab.url === TIMETABLE_URL) {
-      alreadyOnTimetable = await isOnTimetablePage(tab.id);
-      if (alreadyOnTimetable) {
-        console.log('Already on timetable page, skipping navigation');
-        // Still check login (using cache) to ensure user is logged in
-        const isLoggedIn = await checkLogin(tab.id);
-        if (!isLoggedIn) {
-          // If not logged in, invalidate cache and proceed with normal flow
-          await invalidateLoginCache();
-          alreadyOnTimetable = false;
+    // Step 1: Check login
+    const isLoggedIn = await checkLogin(homeTab.id);
+    if (!isLoggedIn) {
+      // Show alert to user
+      await chrome.scripting.executeScript({
+        target: { tabId: homeTab.id },
+        func: () => {
+          alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
         }
-      }
+      });
+      throw new Error('NOT_LOGGED_IN');
     }
     
-    if (!alreadyOnTimetable) {
-      // Step 1: Navigate to FAP homepage
-      if (!tab || !tab.url || !tab.url.startsWith(FAP_BASE_URL)) {
-        tab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        // Update tab reference
-        const tabs = await chrome.tabs.query({ url: `${FAP_BASE_URL}/*` });
-        if (tabs.length > 0) {
-          tab = tabs[0];
-        }
-      } else {
-        await navigateToUrl(tab.id, FAP_BASE_URL, waitTime);
-      }
-      
-      // Step 2: Check login
-      const isLoggedIn = await checkLogin(tab.id);
-      if (!isLoggedIn) {
-        // Show alert to user
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
-          }
-        });
-        throw new Error('NOT_LOGGED_IN');
-      }
-      
-      // Step 3: Navigate to timetable page
-      const navSuccess = await navigateToUrl(tab.id, TIMETABLE_URL, waitTime);
-      if (!navSuccess) {
-        // Show alert to user
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            alert('Không thể điều hướng đến trang lịch học. Vui lòng thử lại.');
-          }
-        });
-        console.error('Failed to navigate to timetable page');
-        // Navigation failure might indicate user logged out, invalidate cache
-        await invalidateLoginCache();
-        throw new Error('NAVIGATION_FAILED');
-      }
-    }
+    // Step 2: Reuse the login page tab - navigate it to timetable page (keep in background)
+    timetableTab = homeTab;
+    await navigateToUrl(timetableTab.id, TIMETABLE_URL, waitTime);
+    
+    // Get localized messages for overlay
+    const overlayTitle = chrome.i18n.getMessage('overlayTitle');
+    const overlayMessage = chrome.i18n.getMessage('overlayMessage');
+    const overlayDismiss = chrome.i18n.getMessage('overlayDismiss');
+    const extensionName = chrome.i18n.getMessage('extensionName');
+    
+    // Register this tab for overlay injection on page loads
+    activeScrapingTabs.set(timetableTab.id, {
+      title: overlayTitle,
+      message: overlayMessage,
+      dismissText: overlayDismiss,
+      extensionName: extensionName
+    });
+    
+    // Set sessionStorage flag to indicate scraping is starting
+    // This ensures overlay persists across page reloads
+    await chrome.scripting.executeScript({
+      target: { tabId: timetableTab.id },
+      func: (title, message, dismissText, extName) => {
+        sessionStorage.setItem('fptu_scraping_active', 'true');
+        sessionStorage.setItem('fptu_overlay_title', title);
+        sessionStorage.setItem('fptu_overlay_message', message);
+        sessionStorage.setItem('fptu_overlay_dismiss', dismissText);
+        sessionStorage.setItem('fptu_extension_name', extName);
+      },
+      args: [overlayTitle, overlayMessage, overlayDismiss, extensionName]
+    });
+    
+    // Immediately inject minimal overlay (appears instantly)
+    await injectMinimalOverlay(timetableTab.id, overlayTitle, overlayMessage, overlayDismiss, '', extensionName);
+    
+    // Step 3: Inject content script
+    await chrome.scripting.executeScript({
+      target: { tabId: timetableTab.id },
+      files: ['content.js']
+    });
+    
+    // Wait briefly for content script to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Send message to show overlay with localized strings
+    // Content script will check sessionStorage first, but this ensures it shows if sessionStorage wasn't set
+    await sendMessageToContentScript(timetableTab.id, {
+      action: 'showOverlay',
+      title: overlayTitle,
+      message: overlayMessage,
+      dismissText: overlayDismiss
+    });
     
     // Step 4: Determine year from start date
     const year = new Date(startDate).getFullYear();
     
     // Step 5: Check current year dropdown value and update if necessary
     const currentYearResult = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
+      target: { tabId: timetableTab.id },
       func: () => {
         const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
         if (yearSelect) {
@@ -511,7 +729,7 @@ async function startScraping(startDate, endDate, waitTime) {
       console.log(`Current year dropdown: ${currentYear}, updating to: ${year}`);
       // Select year
       await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
+        target: { tabId: timetableTab.id },
         func: (year) => {
           const yearSelect = document.querySelector('#ctl00_mainContent_drpYear');
           if (yearSelect) {
@@ -533,7 +751,7 @@ async function startScraping(startDate, endDate, waitTime) {
     // Step 6: Get week options (always fetch fresh after potential year change)
     // If we updated the year, the week dropdown should already be updated
     // If we didn't update, we still need to read the current week options
-    const weekOptions = await getWeekOptions(tab.id);
+    const weekOptions = await getWeekOptions(timetableTab.id);
     
     // Step 7: Filter weeks by date range
     const weeksToScrape = filterWeeksByRange(weekOptions, startDate, endDate, year);
@@ -555,6 +773,35 @@ async function startScraping(startDate, endDate, waitTime) {
         // Ignore errors
       }
       
+          // Get localized progress message
+          const progressText = chrome.i18n.getMessage('overlayProgress', [
+            (i + 1).toString(),
+            weeksToScrape.length.toString()
+          ]);
+          
+          // IMPORTANT: Set sessionStorage BEFORE selecting week (which causes page reload)
+          // This ensures overlay persists across page reloads
+          await chrome.scripting.executeScript({
+            target: { tabId: timetableTab.id },
+            func: (weekNum, totalWeeks, progressText) => {
+              sessionStorage.setItem('fptu_scraping_active', 'true');
+              sessionStorage.setItem('fptu_scraping_week', weekNum.toString());
+              sessionStorage.setItem('fptu_scraping_total', totalWeeks.toString());
+              sessionStorage.setItem('fptu_scraping_progress', progressText);
+            },
+            args: [i + 1, weeksToScrape.length, progressText]
+          });
+          
+          // Send progress update to content script for overlay (if page hasn't reloaded yet)
+          await sendMessageToContentScript(timetableTab.id, {
+            action: 'updateOverlayProgress',
+            currentWeek: i + 1,
+            totalWeeks: weeksToScrape.length,
+            progressText: progressText
+          });
+          
+          // The tabs.onUpdated listener will inject overlay immediately when page starts loading
+      
       // IMPORTANT: We should NOT switch years based on week.startYear
       // The week appears in the current year's dropdown, so we should stay on that year
       // The week.startYear is only used for date parsing, not for which dropdown to use
@@ -573,7 +820,7 @@ async function startScraping(startDate, endDate, waitTime) {
       // and the base year (for parsing December dates)
       const baseYearForParsing = week.startYear || year;
       await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
+        target: { tabId: timetableTab.id },
         func: (selectedYear, baseYear) => {
           // Store both the selected year (dropdown year) and base year (for parsing)
           window.__selectedYear = selectedYear;
@@ -587,14 +834,33 @@ async function startScraping(startDate, endDate, waitTime) {
       
       while (!success && retries < MAX_RETRIES) {
         try {
-          // Select week
-          const selectSuccess = await selectWeek(tab.id, week.value, waitTime);
+          // Select week (this will cause page reload via postback)
+          // The tabs.onUpdated listener will inject overlay immediately when page starts loading
+          const selectSuccess = await selectWeek(timetableTab.id, week.value, waitTime);
           if (!selectSuccess) {
             throw new Error('Failed to select week');
           }
           
+          // After page reload, re-inject content script
+          // Content script will check sessionStorage and show overlay immediately
+          await chrome.scripting.executeScript({
+            target: { tabId: timetableTab.id },
+            files: ['content.js']
+          });
+          
+          // Wait briefly for content script to initialize
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Send progress update to content script (overlay should already be showing)
+          await sendMessageToContentScript(timetableTab.id, {
+            action: 'updateOverlayProgress',
+            currentWeek: i + 1,
+            totalWeeks: weeksToScrape.length,
+            progressText: progressText
+          });
+          
                 // Extract data
-          const weekData = await extractWeekData(tab.id);
+          const weekData = await extractWeekData(timetableTab.id);
           // weekData is now always an array (empty if no classes)
           if (Array.isArray(weekData)) {
             allWeeksData.push({
@@ -625,7 +891,7 @@ async function startScraping(startDate, endDate, waitTime) {
       }
     }
     
-    // Send completion message
+    // Send completion message to popup
     try {
       chrome.runtime.sendMessage({
         action: 'scrapingComplete',
@@ -635,6 +901,33 @@ async function startScraping(startDate, endDate, waitTime) {
       }).catch(() => {});
     } catch (e) {
       // Ignore errors
+    }
+    
+    // Send completion message to content script to update overlay
+    if (timetableTab) {
+      const completeText = chrome.i18n.getMessage('overlayComplete');
+      
+      // Remove from active scraping tabs
+      activeScrapingTabs.delete(timetableTab.id);
+      
+      // Clear sessionStorage flags
+      await chrome.scripting.executeScript({
+        target: { tabId: timetableTab.id },
+        func: () => {
+          sessionStorage.removeItem('fptu_scraping_active');
+          sessionStorage.removeItem('fptu_scraping_week');
+          sessionStorage.removeItem('fptu_scraping_total');
+          sessionStorage.removeItem('fptu_scraping_progress');
+        }
+      });
+      
+      await sendMessageToContentScript(timetableTab.id, {
+        action: 'scrapingComplete',
+        totalWeeks: weeksToScrape.length,
+        successCount: allWeeksData.length,
+        errorCount: errors.length,
+        completeText: completeText
+      });
     }
     
     // Return results
@@ -649,6 +942,27 @@ async function startScraping(startDate, endDate, waitTime) {
     
   } catch (error) {
     console.error('Scraping error:', error);
+    
+    // Clear sessionStorage and hide overlay on error
+    if (timetableTab) {
+      // Remove from active scraping tabs
+      activeScrapingTabs.delete(timetableTab.id);
+      
+      await chrome.scripting.executeScript({
+        target: { tabId: timetableTab.id },
+        func: () => {
+          sessionStorage.removeItem('fptu_scraping_active');
+          sessionStorage.removeItem('fptu_scraping_week');
+          sessionStorage.removeItem('fptu_scraping_total');
+          sessionStorage.removeItem('fptu_scraping_progress');
+        }
+      });
+      
+      await sendMessageToContentScript(timetableTab.id, {
+        action: 'hideOverlay'
+      });
+    }
+    
     return {
       success: false,
       error: error.message

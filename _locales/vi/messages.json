@@ -108,6 +108,36 @@
   "errorUnknown": {
     "message": "Lỗi không xác định",
     "description": "Lỗi không xác định"
+  },
+  "overlayTitle": {
+    "message": "Đang trích xuất lịch học",
+    "description": "Tiêu đề overlay trích xuất"
+  },
+  "overlayMessage": {
+    "message": "Đang trích xuất lịch học cho bạn...",
+    "description": "Thông điệp overlay"
+  },
+  "overlayProgress": {
+    "message": "Đang trích xuất tuần $WEEK$/$TOTAL$",
+    "description": "Tiến trình trích xuất trong overlay",
+    "placeholders": {
+      "WEEK": {
+        "content": "$1",
+        "example": "3"
+      },
+      "TOTAL": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "overlayComplete": {
+    "message": "Trích xuất hoàn tất!",
+    "description": "Thông báo hoàn tất trong overlay"
+  },
+  "overlayDismiss": {
+    "message": "Đóng",
+    "description": "Nút đóng overlay"
   }
 }
 

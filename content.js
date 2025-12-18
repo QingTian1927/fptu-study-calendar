@@ -3,6 +3,10 @@
 (function() {
   'use strict';
 
+  // Store overlay style element globally to avoid duplicates
+  // Declared at the top to avoid Temporal Dead Zone issues
+  let overlayStyleElement = null;
+
   // Parse time from string like "(7:30-9:00)" or "(12:50-15:10)"
   function parseTime(timeStr) {
     const match = timeStr.match(/\((\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})\)/);
@@ -347,6 +351,236 @@
     }
   }
 
+  // ========================================
+  // OVERLAY FUNCTIONALITY (must be defined before sessionStorage check)
+  // ========================================
+  
+  // Create overlay element
+  function createOverlay(title, message, dismissText) {
+    // Remove existing overlay if any
+    const existingOverlay = document.getElementById('fptu-calendar-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'fptu-calendar-overlay';
+    
+    // Create styles (only once)
+    if (!overlayStyleElement) {
+      overlayStyleElement = document.createElement('style');
+      overlayStyleElement.id = 'fptu-calendar-overlay-style';
+      overlayStyleElement.textContent = `
+        #fptu-calendar-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 999999;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        #fptu-calendar-overlay .overlay-content {
+          background: #ffffff;
+          border-radius: 12px;
+          padding: 32px;
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          text-align: center;
+        }
+        
+        #fptu-calendar-overlay .overlay-extension-name {
+          font-size: 12px;
+          font-weight: 500;
+          color: #10b981;
+          margin-bottom: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        
+        #fptu-calendar-overlay .overlay-title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #171717;
+          margin-bottom: 8px;
+          line-height: 1.2;
+        }
+        
+        #fptu-calendar-overlay .overlay-message {
+          font-size: 14px;
+          color: #525252;
+          margin-bottom: 24px;
+          line-height: 1.5;
+        }
+        
+        #fptu-calendar-overlay .overlay-progress {
+          font-size: 16px;
+          font-weight: 500;
+          color: #10b981;
+          margin-bottom: 24px;
+          min-height: 24px;
+        }
+        
+        #fptu-calendar-overlay .spinner {
+          width: 40px;
+          height: 40px;
+          margin: 0 auto 24px;
+          border: 4px solid #e5e5e5;
+          border-top-color: #10b981;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        #fptu-calendar-overlay .overlay-button {
+          background: #10b981;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          padding: 12px 24px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          font-family: inherit;
+          display: block;
+          margin: 0 auto;
+        }
+        
+        #fptu-calendar-overlay .overlay-button:hover {
+          background: #059669;
+        }
+        
+        #fptu-calendar-overlay .overlay-button:active {
+          transform: scale(0.98);
+        }
+        
+        #fptu-calendar-overlay.complete .spinner {
+          display: none;
+        }
+        
+        #fptu-calendar-overlay.complete .overlay-progress {
+          color: #10b981;
+          font-weight: 600;
+        }
+      `;
+      document.head.appendChild(overlayStyleElement);
+    }
+    
+    // Get extension name from sessionStorage or use default
+    const extName = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fptu_extension_name') : null;
+    const extensionName = extName || 'FPTU Study Calendar';
+    
+    overlay.innerHTML = `
+      <div class="overlay-content">
+        <div class="overlay-extension-name">${extensionName}</div>
+        <div class="overlay-title" id="overlay-title">${title || 'Đang trích xuất lịch học'}</div>
+        <div class="overlay-message" id="overlay-message">${message || 'Đang trích xuất lịch học cho bạn...'}</div>
+        <div class="spinner" id="overlay-spinner"></div>
+        <div class="overlay-progress" id="overlay-progress"></div>
+        <button class="overlay-button" id="overlay-dismiss" style="display: none;">${dismissText || 'Đóng'}</button>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Add dismiss button handler
+    const dismissButton = overlay.querySelector('#overlay-dismiss');
+    dismissButton.addEventListener('click', () => {
+      overlay.remove();
+    });
+    
+    return overlay;
+  }
+  
+  // Show overlay
+  function showOverlay(title, message, dismissText) {
+    createOverlay(title, message, dismissText);
+  }
+  
+  // Update overlay progress
+  function updateOverlayProgress(progressText) {
+    let overlay = document.getElementById('fptu-calendar-overlay');
+    if (!overlay) {
+      // Create overlay if it doesn't exist
+      showOverlay();
+      overlay = document.getElementById('fptu-calendar-overlay');
+    }
+    
+    const progressEl = overlay.querySelector('#overlay-progress');
+    if (progressEl && progressText) {
+      progressEl.textContent = progressText;
+    }
+  }
+  
+  // Mark overlay as complete
+  function completeOverlay(completeText) {
+    const overlay = document.getElementById('fptu-calendar-overlay');
+    if (!overlay) return;
+    
+    overlay.classList.add('complete');
+    const progressEl = overlay.querySelector('#overlay-progress');
+    const spinnerEl = overlay.querySelector('#overlay-spinner');
+    const dismissButton = overlay.querySelector('#overlay-dismiss');
+    
+    if (progressEl && completeText) {
+      progressEl.textContent = completeText;
+    }
+    if (spinnerEl) {
+      spinnerEl.style.display = 'none';
+    }
+    if (dismissButton) {
+      dismissButton.style.display = 'block';
+    }
+  }
+  
+  // Hide overlay
+  function hideOverlay() {
+    const overlay = document.getElementById('fptu-calendar-overlay');
+    if (overlay) {
+      overlay.remove();
+    }
+  }
+  
+  // ========================================
+  // CHECK SESSIONSTORAGE IMMEDIATELY ON LOAD
+  // This ensures overlay persists across page reloads
+  // Must run synchronously after overlay functions are defined
+  // ========================================
+  (function checkSessionStorageForOverlay() {
+    try {
+      const isScraping = sessionStorage.getItem('fptu_scraping_active') === 'true';
+      if (isScraping) {
+        // Get stored overlay data
+        const title = sessionStorage.getItem('fptu_overlay_title') || 'Đang trích xuất lịch học';
+        const message = sessionStorage.getItem('fptu_overlay_message') || 'Đang trích xuất lịch học cho bạn...';
+        const dismissText = sessionStorage.getItem('fptu_overlay_dismiss') || 'Đóng';
+        const progressText = sessionStorage.getItem('fptu_scraping_progress') || '';
+        
+        // Show overlay immediately with stored progress
+        showOverlay(title, message, dismissText);
+        
+        // Update progress if available
+        if (progressText) {
+          updateOverlayProgress(progressText);
+        }
+        
+        console.log('Overlay restored from sessionStorage');
+      }
+    } catch (error) {
+      console.error('Error checking sessionStorage for overlay:', error);
+    }
+  })();
+  
   // Execute extraction immediately
   // The background script will wait for the page to be ready before calling this
   console.log('Content script loaded, starting extraction...');
@@ -357,6 +591,26 @@
   
   // Also expose the extraction function globally for debugging
   window.extractScheduleData = extractScheduleData;
+  
+  // Listen for messages from background script
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.action === 'showOverlay') {
+        showOverlay(message.title, message.message, message.dismissText);
+        sendResponse({ success: true });
+      } else if (message.action === 'updateOverlayProgress') {
+        updateOverlayProgress(message.progressText);
+        sendResponse({ success: true });
+      } else if (message.action === 'scrapingComplete') {
+        completeOverlay(message.completeText);
+        sendResponse({ success: true });
+      } else if (message.action === 'hideOverlay') {
+        hideOverlay();
+        sendResponse({ success: true });
+      }
+      return true; // Keep channel open for async response
+    });
+  }
   
   return scrapedData;
 })();

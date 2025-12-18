@@ -127,8 +127,14 @@ async function initPopup() {
     }
   });
 
+  // Get button references early so they're available in all handlers
+  const scrapeButton = document.getElementById('scrapeButton');
+  const previewButton = document.getElementById('previewButton');
+  const exportButton = document.getElementById('exportButton');
+  const progress = document.getElementById('progress');
+
   // Scrape button handler
-  document.getElementById('scrapeButton').addEventListener('click', async () => {
+  scrapeButton.addEventListener('click', async () => {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const waitTime = parseInt(document.getElementById('waitTime').value, 10);
@@ -156,10 +162,7 @@ async function initPopup() {
     }
 
     // Disable button and show progress
-    const scrapeButton = document.getElementById('scrapeButton');
-    const exportButton = document.getElementById('exportButton');
     scrapeButton.disabled = true;
-    const progress = document.getElementById('progress');
     progress.className = 'progress loading';
     progress.textContent = getMessage('progressInitializing');
 
@@ -236,13 +239,12 @@ async function initPopup() {
   });
 
   // Preview button handler
-  const previewButton = document.getElementById('previewButton');
   previewButton.addEventListener('click', () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('calendar.html') });
   });
 
   // Export button handler (placeholder for MVP)
-  document.getElementById('exportButton').addEventListener('click', () => {
+  exportButton.addEventListener('click', () => {
     // This will be implemented later for .ics export
     alert('Tính năng xuất file .ics sẽ được triển khai trong phiên bản tiếp theo');
   });
@@ -260,11 +262,23 @@ async function initPopup() {
   // Listen for progress updates from background
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'progressUpdate') {
-      const progress = document.getElementById('progress');
       progress.className = 'progress loading';
       progress.textContent = getMessage('progressScraping', [message.currentWeek, message.totalWeeks]);
     } else if (message.action === 'scrapingComplete') {
-      // This is handled in the main try/catch, but we can also handle it here if needed
+      // Update progress to show completion
+      progress.className = 'progress success';
+      progress.textContent = getMessage('progressSuccess');
+      
+      // Enable preview and export buttons
+      previewButton.disabled = false;
+      exportButton.disabled = false;
+      
+      // Reset progress after 5 seconds
+      setTimeout(() => {
+        progress.className = 'progress';
+        progress.textContent = getMessage('progressDefault');
+      }, 5000);
+      
       console.log('Scraping completed:', message);
     }
     return true;
