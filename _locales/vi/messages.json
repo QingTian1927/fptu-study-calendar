@@ -298,6 +298,30 @@
   "confirmDeleteClass": {
     "message": "Bạn có chắc chắn muốn xóa lớp học này?",
     "description": "Xác nhận xóa lớp học"
+  },
+  "aboutTitle": {
+    "message": "Giới thiệu",
+    "description": "Tiêu đề phần giới thiệu"
+  },
+  "aboutVersionLabel": {
+    "message": "Phiên bản:",
+    "description": "Nhãn phiên bản"
+  },
+  "aboutAuthorLabel": {
+    "message": "Tác giả:",
+    "description": "Nhãn tác giả"
+  },
+  "aboutGitHubLabel": {
+    "message": "GitHub:",
+    "description": "Nhãn GitHub"
+  },
+  "aboutHelpLabel": {
+    "message": "Hỗ trợ:",
+    "description": "Nhãn hỗ trợ"
+  },
+  "aboutGitHubValue": {
+    "message": "sắp ra mắt",
+    "description": "Giá trị GitHub (coming soon)"
   }
 }
 

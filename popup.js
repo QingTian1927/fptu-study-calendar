@@ -44,6 +44,12 @@ async function initPopup() {
   document.getElementById('endDateLabel').textContent = getMessage('endDateLabel');
   document.getElementById('waitTimeLabel').textContent = getMessage('waitTimeLabel');
   document.getElementById('advancedSettingsText').textContent = getMessage('advancedSettings');
+  document.getElementById('aboutTitle').textContent = getMessage('aboutTitle');
+  document.getElementById('aboutVersionLabel').textContent = getMessage('aboutVersionLabel');
+  document.getElementById('aboutAuthorLabel').textContent = getMessage('aboutAuthorLabel');
+  document.getElementById('aboutGitHubLabel').textContent = getMessage('aboutGitHubLabel');
+  document.getElementById('aboutHelpLabel').textContent = getMessage('aboutHelpLabel');
+  document.getElementById('aboutGitHub').textContent = getMessage('aboutGitHubValue');
   document.getElementById('scrapeButtonText').textContent = getMessage('scrapeButton');
   document.getElementById('previewButtonText').textContent = getMessage('previewButton');
   document.getElementById('exportButtonText').textContent = getMessage('exportButton');
@@ -52,18 +58,30 @@ async function initPopup() {
   // Set page title
   document.title = getMessage('popupTitle');
   
-  // Initialize accordion
-  const accordionHeader = document.getElementById('accordionHeader');
-  const accordionContent = document.getElementById('accordionContent');
+  // Initialize settings overlay
+  const settingsButton = document.getElementById('settingsButton');
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const overlayClose = document.getElementById('overlayClose');
   
-  accordionHeader.addEventListener('click', () => {
-    const isActive = accordionHeader.classList.contains('active');
-    if (isActive) {
-      accordionHeader.classList.remove('active');
-      accordionContent.classList.remove('active');
-    } else {
-      accordionHeader.classList.add('active');
-      accordionContent.classList.add('active');
+  settingsButton.addEventListener('click', () => {
+    settingsOverlay.classList.add('active');
+  });
+  
+  overlayClose.addEventListener('click', () => {
+    settingsOverlay.classList.remove('active');
+  });
+  
+  // Close overlay when clicking outside
+  settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) {
+      settingsOverlay.classList.remove('active');
+    }
+  });
+  
+  // Close overlay with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsOverlay.classList.contains('active')) {
+      settingsOverlay.classList.remove('active');
     }
   });
 
