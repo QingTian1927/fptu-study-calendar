@@ -17,14 +17,14 @@ function getEndOfYear(year) {
   return new Date(year, 11, 31); // December 31
 }
 
-// Calculate end date (4 months after start, ending at the last day of the month)
+// Calculate end date (3 months after start, ending at the last day of the month)
 function calculateEndDate(startDate) {
   const start = new Date(startDate);
   const year = start.getFullYear();
   
-  // Add 4 months
+  // Add 3 months
   const endDate = new Date(start);
-  endDate.setMonth(endDate.getMonth() + 4);
+  endDate.setMonth(endDate.getMonth() + 3);
   
   // Set to the last day of that month
   endDate.setMonth(endDate.getMonth() + 1, 0); // Day 0 = last day of previous month
