@@ -87,6 +87,53 @@
     }
 
     /* ========================================
+       DARK THEME
+       ======================================== */
+    
+    [data-theme="dark"] {
+      /* Neutral Charcoal Palette - Dark Theme */
+      --color-background: #1f1f1f;
+      --color-surface: #262626;
+      --color-border: rgba(255, 255, 255, 0.1);
+      
+      /* Text Colors - High Contrast, Neutral */
+      --color-text-primary: #e8e8e8;
+      --color-text-secondary: #b8b8b8;
+      --color-text-tertiary: #909090;
+      --color-text-muted: #707070;
+      
+      /* Adjust vibrant colors for dark mode - Subtle tints on charcoal */
+      --color-primary-light: rgba(16, 185, 129, 0.18);
+      --color-secondary-light: rgba(99, 102, 241, 0.18);
+      --color-accent-light: rgba(14, 165, 233, 0.18);
+      --color-success-light: rgba(16, 185, 129, 0.18);
+      --color-error-light: rgba(244, 63, 94, 0.18);
+    }
+
+    /* System theme detection */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        /* Neutral Charcoal Palette - Dark Theme */
+        --color-background: #1f1f1f;
+        --color-surface: #262626;
+        --color-border: rgba(255, 255, 255, 0.1);
+        
+        /* Text Colors - High Contrast, Neutral */
+        --color-text-primary: #e8e8e8;
+        --color-text-secondary: #b8b8b8;
+        --color-text-tertiary: #909090;
+        --color-text-muted: #707070;
+        
+        /* Adjust vibrant colors for dark mode - Subtle tints on charcoal */
+        --color-primary-light: rgba(16, 185, 129, 0.18);
+        --color-secondary-light: rgba(99, 102, 241, 0.18);
+        --color-accent-light: rgba(14, 165, 233, 0.18);
+        --color-success-light: rgba(16, 185, 129, 0.18);
+        --color-error-light: rgba(244, 63, 94, 0.18);
+      }
+    }
+
+    /* ========================================
        RESET & BASE STYLES
        ======================================== */
     
@@ -121,6 +168,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    [data-theme="dark"] .header {
+      background: rgba(16, 185, 129, 0.12);
     }
 
     .header-content {
@@ -161,9 +212,19 @@
       transition: all var(--transition-base);
     }
 
+    .btn-icon {
+      color: var(--color-text-secondary);
+    }
+
     .btn-icon:hover:not(:disabled) {
       background: var(--color-gray-50);
       border-color: var(--color-gray-300);
+      color: var(--color-text-primary);
+    }
+
+    [data-theme="dark"] .btn-icon:hover:not(:disabled) {
+      background: #2f2f2f;
+      border-color: rgba(255, 255, 255, 0.15);
     }
 
     .btn-icon svg {
@@ -229,9 +290,19 @@
       transition: border-color var(--transition-base);
     }
 
+    .form-group input::placeholder {
+      color: var(--color-text-muted);
+    }
+
     .form-group input:focus {
       outline: none;
       border-color: var(--color-primary);
+    }
+
+    /* Fix native date/time input icon colors in dark theme */
+    [data-theme="dark"] .form-group input[type="date"],
+    [data-theme="dark"] .form-group input[type="time"] {
+      color-scheme: dark;
     }
 
     .form-group input:disabled {
@@ -239,6 +310,25 @@
       cursor: not-allowed;
       opacity: 0.6;
     }
+
+    .form-group select {
+      width: 100%;
+      padding: 6px var(--space-sm);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--border-radius-sm);
+      background: var(--color-surface);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      font-family: inherit;
+      transition: border-color var(--transition-base);
+      cursor: pointer;
+    }
+
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+
 
     /* ========================================
        DATE RANGE SECTION
@@ -317,6 +407,11 @@
       color: var(--color-text-primary);
     }
 
+    [data-theme="dark"] .overlay-close:hover {
+      background: #2f2f2f;
+      color: var(--color-text-primary);
+    }
+
     .overlay-close::before {
       content: '×';
       font-size: 24px;
@@ -343,6 +438,8 @@
     .about-item {
       margin-bottom: var(--space-sm);
       font-size: var(--font-size-sm);
+      display: flex;
+      align-items: baseline;
     }
 
     .about-item:last-child {
@@ -352,12 +449,25 @@
     .about-label {
       font-weight: var(--font-weight-medium);
       color: var(--color-text-secondary);
-      display: inline-block;
-      min-width: 80px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      width: 80px;
     }
 
     .about-value {
       color: var(--color-text-primary);
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .about-value a {
+      color: var(--color-accent);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .about-value a:hover {
+      text-decoration: underline;
     }
 
     .about-value a {
@@ -449,6 +559,11 @@
       border-color: var(--color-gray-300);
     }
 
+    [data-theme="dark"] .btn-outline:hover:not(:disabled) {
+      background: #2f2f2f;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
     /* ========================================
        PROGRESS INDICATOR
        ======================================== */
@@ -468,11 +583,23 @@
       color: var(--color-text-secondary);
     }
 
+    [data-theme="dark"] .progress {
+      background: #2a2a2a;
+      color: var(--color-text-secondary);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
     .progress.success {
       background: var(--color-success-light);
       border-color: var(--color-success);
       color: var(--color-success);
       font-weight: var(--font-weight-medium);
+    }
+
+    [data-theme="dark"] .progress.success {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: #10b981;
+      color: #6ee7b7;
     }
 
     .progress.error {
@@ -482,10 +609,22 @@
       font-weight: var(--font-weight-medium);
     }
 
+    [data-theme="dark"] .progress.error {
+      background: rgba(244, 63, 94, 0.22);
+      border-color: #f43f5e;
+      color: #fda4af;
+    }
+
     .progress.loading {
       background: var(--color-accent-light);
       border-color: var(--color-accent);
       color: var(--color-accent);
+    }
+
+    [data-theme="dark"] .progress.loading {
+      background: rgba(14, 165, 233, 0.22);
+      border-color: #0ea5e9;
+      color: #7dd3fc;
     }
 
     /* ========================================
@@ -580,6 +719,15 @@
         <button class="overlay-close" id="overlayClose"></button>
       </div>
       <div class="overlay-body">
+        <div class="form-group">
+          <label for="themeSelect" id="themeLabel">Giao diện</label>
+          <select id="themeSelect">
+            <option value="system" id="themeSystemOption">Hệ thống</option>
+            <option value="light" id="themeLightOption">Sáng</option>
+            <option value="dark" id="themeDarkOption">Tối</option>
+          </select>
+        </div>
+
         <div class="form-group">
           <label for="waitTime" id="waitTimeLabel">Wait Time (ms)</label>
           <input type="number" id="waitTime" min="1000" step="1000" />

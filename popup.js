@@ -17,6 +17,37 @@ function getEndOfYear(year) {
   return new Date(year, 11, 31); // December 31
 }
 
+// Theme management
+function getSystemTheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'system') {
+    const systemTheme = getSystemTheme();
+    root.setAttribute('data-theme', systemTheme);
+  } else {
+    root.setAttribute('data-theme', theme);
+  }
+}
+
+async function loadTheme() {
+  const result = await chrome.storage.local.get(['theme']);
+  const theme = result.theme || 'system';
+  applyTheme(theme);
+  return theme;
+}
+
+async function saveTheme(theme) {
+  await chrome.storage.local.set({ theme });
+  applyTheme(theme);
+  // Notify other extension pages of theme change
+  chrome.runtime.sendMessage({ action: 'themeChanged', theme }).catch(() => {
+    // Ignore errors if no listeners
+  });
+}
+
 // Calculate end date (3 months after start, ending at the last day of the month)
 function calculateEndDate(startDate) {
   const start = new Date(startDate);
@@ -50,6 +81,10 @@ async function initPopup() {
   document.getElementById('aboutGitHubLabel').textContent = getMessage('aboutGitHubLabel');
   document.getElementById('aboutHelpLabel').textContent = getMessage('aboutHelpLabel');
   document.getElementById('aboutGitHub').textContent = getMessage('aboutGitHubValue');
+  document.getElementById('themeLabel').textContent = getMessage('themeLabel');
+  document.getElementById('themeSystemOption').textContent = getMessage('themeSystem');
+  document.getElementById('themeLightOption').textContent = getMessage('themeLight');
+  document.getElementById('themeDarkOption').textContent = getMessage('themeDark');
   document.getElementById('scrapeButtonText').textContent = getMessage('scrapeButton');
   document.getElementById('previewButtonText').textContent = getMessage('previewButton');
   document.getElementById('exportButtonText').textContent = getMessage('exportButton');
@@ -84,6 +119,23 @@ async function initPopup() {
       settingsOverlay.classList.remove('active');
     }
   });
+
+  // Initialize theme
+  const savedTheme = await loadTheme();
+  const themeSelect = document.getElementById('themeSelect');
+  if (themeSelect) {
+    themeSelect.value = savedTheme;
+    themeSelect.addEventListener('change', async (e) => {
+      await saveTheme(e.target.value);
+    });
+  }
+
+  // Listen for system theme changes when system theme is selected
+  if (savedTheme === 'system') {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      applyTheme('system');
+    });
+  }
 
   // Load saved settings
   const result = await chrome.storage.local.get(['waitTime', 'startDate', 'endDate']);

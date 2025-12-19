@@ -31,6 +31,22 @@
     "message": "Thời gian chờ (ms)",
     "description": "Nhãn thời gian chờ"
   },
+  "themeLabel": {
+    "message": "Giao diện",
+    "description": "Nhãn chọn giao diện"
+  },
+  "themeSystem": {
+    "message": "Hệ thống",
+    "description": "Tùy chọn giao diện theo hệ thống"
+  },
+  "themeLight": {
+    "message": "Sáng",
+    "description": "Tùy chọn giao diện sáng"
+  },
+  "themeDark": {
+    "message": "Tối",
+    "description": "Tùy chọn giao diện tối"
+  },
   "advancedSettings": {
     "message": "Cài đặt nâng cao",
     "description": "Tiêu đề cài đặt nâng cao"

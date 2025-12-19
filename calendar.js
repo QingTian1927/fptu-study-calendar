@@ -78,37 +78,76 @@ function getLuminance(hex) {
  * @param {string} bgHex - Background hex color
  * @returns {'light'|'dark'} Text color preference
  * 
- * For vibrant colors, we prefer dark text on lighter backgrounds.
- * We use a higher threshold to favor dark text unless the background is quite dark.
+ * For dark theme: prefer light text (higher threshold for dark)
+ * For light theme: prefer dark text on lighter backgrounds
  */
 function getTextColor(bgHex) {
+  const isDark = getCurrentTheme() === 'dark';
   const luminance = getLuminance(bgHex);
-  // Use higher threshold (0.4) to favor dark text on lighter backgrounds
-  // Only use light text when background is sufficiently dark
-  return luminance > 0.4 ? 'dark' : 'light';
+  
+  if (isDark) {
+    // Dark theme: use light text unless background is very light
+    return luminance > 0.6 ? 'dark' : 'light';
+  } else {
+    // Light theme: use higher threshold (0.4) to favor dark text on lighter backgrounds
+    return luminance > 0.4 ? 'dark' : 'light';
+  }
 }
 
 /**
- * Create a lighter tinted version of a color for event card backgrounds
- * This allows dark text while maintaining color identity
+ * Get current theme (light or dark)
+ * @returns {'light'|'dark'} Current theme
+ */
+function getCurrentTheme() {
+  const root = document.documentElement;
+  const themeAttr = root.getAttribute('data-theme');
+  if (themeAttr) {
+    return themeAttr;
+  }
+  // Check system preference if no explicit theme
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+/**
+ * Create a tinted version of a color for event card backgrounds
+ * Light theme: very light tint (92% white blend) for dark text
+ * Dark theme: darker tint (85% dark blend) for light text
  * @param {string} baseColor - Base hex color
  * @param {boolean} isOnline - Whether class is online
  * @returns {string} Tinted background color hex
  */
 function getTintedBackground(baseColor, isOnline) {
+  const isDark = getCurrentTheme() === 'dark';
+  
   // Convert hex to RGB
   const r = parseInt(baseColor.slice(1, 3), 16);
   const g = parseInt(baseColor.slice(3, 5), 16);
   const b = parseInt(baseColor.slice(5, 7), 16);
   
-  // Create a very light tint (92% white blend) for backgrounds
-  // This ensures dark text is readable while preserving color identity
-  const tintFactor = 0.92;
-  const tintedR = Math.round(r * (1 - tintFactor) + 255 * tintFactor);
-  const tintedG = Math.round(g * (1 - tintFactor) + 255 * tintFactor);
-  const tintedB = Math.round(b * (1 - tintFactor) + 255 * tintFactor);
-  
-  return `#${tintedR.toString(16).padStart(2, '0')}${tintedG.toString(16).padStart(2, '0')}${tintedB.toString(16).padStart(2, '0')}`;
+  if (isDark) {
+    // Dark theme: create a darker tint on neutral charcoal base (#262626)
+    const darkBaseR = 38;
+    const darkBaseG = 38;
+    const darkBaseB = 38;
+    const tintFactor = 0.85;
+    
+    // Blend with color at reduced saturation for dark theme
+    const colorMix = 0.15; // 15% of original color
+    const tintedR = Math.round(r * colorMix + darkBaseR * tintFactor);
+    const tintedG = Math.round(g * colorMix + darkBaseG * tintFactor);
+    const tintedB = Math.round(b * colorMix + darkBaseB * tintFactor);
+    
+    return `#${tintedR.toString(16).padStart(2, '0')}${tintedG.toString(16).padStart(2, '0')}${tintedB.toString(16).padStart(2, '0')}`;
+  } else {
+    // Light theme: create a very light tint (92% white blend) for backgrounds
+    // This ensures dark text is readable while preserving color identity
+    const tintFactor = 0.92;
+    const tintedR = Math.round(r * (1 - tintFactor) + 255 * tintFactor);
+    const tintedG = Math.round(g * (1 - tintFactor) + 255 * tintFactor);
+    const tintedB = Math.round(b * (1 - tintFactor) + 255 * tintFactor);
+    
+    return `#${tintedR.toString(16).padStart(2, '0')}${tintedG.toString(16).padStart(2, '0')}${tintedB.toString(16).padStart(2, '0')}`;
+  }
 }
 
 /**
@@ -833,9 +872,36 @@ function initI18n() {
 }
 
 // Event listeners
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Initialize i18n
   initI18n();
+  
+  // Load and apply theme before rendering
+  async function loadTheme() {
+    try {
+      const result = await chrome.storage.local.get(['theme']);
+      const theme = result.theme || 'system';
+      applyTheme(theme);
+    } catch (error) {
+      console.error('Error loading theme:', error);
+    }
+  }
+
+  function getSystemTheme() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'system') {
+      const systemTheme = getSystemTheme();
+      root.setAttribute('data-theme', systemTheme);
+    } else {
+      root.setAttribute('data-theme', theme);
+    }
+  }
+
+  await loadTheme();
   
   loadClasses();
 
@@ -945,6 +1011,33 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('editModal').addEventListener('click', (e) => {
     if (e.target.id === 'editModal') {
       closeEditModal();
+    }
+  });
+
+  // Theme change handler (called from message listener or system theme change)
+  function handleThemeChange(theme) {
+    applyTheme(theme);
+    // Re-render calendar to apply new theme colors
+    if (allClasses.length > 0) {
+      renderCalendar();
+    }
+  }
+
+  // Listen for theme changes from popup
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'themeChanged') {
+      handleThemeChange(message.theme);
+      sendResponse({ success: true });
+    }
+    return true;
+  });
+
+  // Listen for system theme changes when system theme is selected
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  mediaQuery.addEventListener('change', async () => {
+    const result = await chrome.storage.local.get(['theme']);
+    if (result.theme === 'system' || !result.theme) {
+      handleThemeChange('system');
     }
   });
 });
