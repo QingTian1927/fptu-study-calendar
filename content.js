@@ -627,6 +627,23 @@
   // Also expose the extraction function globally for debugging
   window.extractScheduleData = extractScheduleData;
   
+  // Notify background script that data is ready
+  // This replaces the polling mechanism with proper message passing
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+    try {
+      chrome.runtime.sendMessage({
+        action: 'dataReady',
+        data: scrapedData || []
+      }).catch((error) => {
+        // Ignore errors if background script isn't listening yet
+        console.log('Could not send dataReady message (this is normal if no listener):', error.message);
+      });
+    } catch (error) {
+      // Ignore errors
+      console.log('Error sending dataReady message:', error.message);
+    }
+  }
+  
   // Listen for messages from background script
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

@@ -358,56 +358,79 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
 // Extract data from current page
 async function extractWeekData(tabId) {
   try {
-    // Inject content script
+    // Create a promise that resolves when content script sends dataReady message
+    // IMPORTANT: Set up listener BEFORE injecting script to avoid race condition
+    const dataPromise = new Promise((resolve) => {
+      let timeoutId = null;
+      let listener = null;
+      
+      // Set up message listener
+      listener = (message, sender) => {
+        // Only accept messages from the correct tab
+        if (sender.tab?.id === tabId && message.action === 'dataReady') {
+          // Clean up
+          if (timeoutId) clearTimeout(timeoutId);
+          if (listener) chrome.runtime.onMessage.removeListener(listener);
+          
+          console.log('Received dataReady message from content script');
+          resolve(message.data || []);
+        }
+      };
+      
+      // Add listener BEFORE injecting script
+      chrome.runtime.onMessage.addListener(listener);
+      
+      // Timeout after 10 seconds - fallback to polling if message doesn't arrive
+      timeoutId = setTimeout(() => {
+        chrome.runtime.onMessage.removeListener(listener);
+        console.log('Timeout waiting for dataReady message, falling back to polling');
+        resolve(null); // Signal to use fallback
+      }, 10000);
+    });
+    
+    // Inject content script (listener is already set up above)
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ['content.js']
     });
     
-    // Wait a bit for content script to execute
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Wait for dataReady message from content script
+    let weekData = await dataPromise;
     
-    // Get the extracted data and also check what the content script found
-    const dataResults = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        // Check if content script ran
-        if (typeof window.scrapedData === 'undefined') {
-          console.error('Content script did not set window.scrapedData');
-          // Try to run extraction manually
-          if (typeof extractScheduleData === 'function') {
-            window.scrapedData = extractScheduleData();
-          } else {
-            console.error('extractScheduleData function not found');
-          }
-        }
-        return {
-          data: window.scrapedData || null,
-          hasFunction: typeof extractScheduleData !== 'undefined',
-          hasData: typeof window.scrapedData !== 'undefined'
-        };
-      }
-    });
-    
-    const result = dataResults[0].result;
-    console.log('Content script execution check:', result);
-    
-    if (!result.data && result.hasFunction) {
-      // Try to execute extraction directly
-      const directResult = await chrome.scripting.executeScript({
+    // Fallback to polling if message wasn't received (for compatibility)
+    if (weekData === null) {
+      console.log('Using fallback polling method');
+      // Wait a bit for content script to execute
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Get the extracted data
+      const dataResults = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => {
-          // Re-run extraction
-          if (typeof extractScheduleData === 'function') {
-            return extractScheduleData();
+          // Check if content script ran
+          if (typeof window.scrapedData === 'undefined') {
+            console.error('Content script did not set window.scrapedData');
+            // Try to run extraction manually
+            if (typeof extractScheduleData === 'function') {
+              window.scrapedData = extractScheduleData();
+            } else {
+              console.error('extractScheduleData function not found');
+            }
           }
-          return null;
+          return window.scrapedData || null;
         }
       });
-      return directResult[0].result || [];
+      
+      weekData = dataResults[0].result || [];
     }
     
-    return result.data || [];
+    // Ensure we return an array
+    if (!Array.isArray(weekData)) {
+      console.warn('extractWeekData: data is not an array, converting:', weekData);
+      weekData = weekData ? [weekData] : [];
+    }
+    
+    return weekData;
   } catch (error) {
     console.error('Error extracting week data:', error);
     return [];
