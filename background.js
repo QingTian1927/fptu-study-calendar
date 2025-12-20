@@ -11,51 +11,6 @@ const FIRST_RUN_COMPLETED_KEY = 'fptu_calendar_first_run_completed';
 // Log when service worker starts
 console.log('FPTU Study Calendar Exporter: Background service worker loaded');
 
-// Wait for DOM to be ready
-function waitForDOM(timeout = 30000) {
-  return new Promise((resolve) => {
-    if (document.readyState === 'complete') {
-      resolve();
-      return;
-    }
-    const checkInterval = setInterval(() => {
-      if (document.readyState === 'complete') {
-        clearInterval(checkInterval);
-        resolve();
-      }
-    }, 100);
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      resolve();
-    }, timeout);
-  });
-}
-
-// Wait for element to appear
-function waitForElement(selector, timeout = 30000) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(selector)) {
-      resolve(document.querySelector(selector));
-      return;
-    }
-    const observer = new MutationObserver(() => {
-      const element = document.querySelector(selector);
-      if (element) {
-        observer.disconnect();
-        resolve(element);
-      }
-    });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    setTimeout(() => {
-      observer.disconnect();
-      reject(new Error(`Element ${selector} not found within ${timeout}ms`));
-    }, timeout);
-  });
-}
-
 // Get cached login state
 async function getCachedLoginState() {
   try {
@@ -144,7 +99,9 @@ async function isOnTimetablePage(tabId) {
         // Check if URL matches timetable page and has student info element
         const isCorrectUrl = window.location.href === 'https://fap.fpt.edu.vn/Report/ScheduleOfWeek.aspx';
         const hasStudentInfo = document.querySelector('#ctl00_mainContent_lblStudent') !== null;
-        return isCorrectUrl && hasStudentInfo;
+        // Also check that we're NOT on login page (in case of redirect)
+        const isLoginPage = document.querySelector('#ctl00_mainContent_btnLogin') !== null;
+        return isCorrectUrl && hasStudentInfo && !isLoginPage;
       }
     });
     return results[0].result;
@@ -826,8 +783,9 @@ async function startScraping(startDate, endDate, waitTime) {
         throw new Error('NOT_LOGGED_IN');
       }
     } else {
-      // Cache says logged in, skip login check entirely
-      console.log('Using cached login state (logged in), skipping login check');
+      // Cache says logged in, but we should still verify before scraping
+      // This catches cases where user logged out but cache is stale
+      console.log('Cache indicates logged in, will verify login state before scraping');
     }
     
     // Step 5: Navigate to timetable page if not already there
@@ -842,6 +800,34 @@ async function startScraping(startDate, endDate, waitTime) {
         console.log('Already on timetable page, reusing it');
         timetableTab = fapTab;
       }
+    }
+    
+    // Step 5.5: Always verify login state before starting to scrape
+    // This is critical to catch stale cache cases where user logged out
+    // We verify by checking if we can access the timetable page properly
+    console.log('Verifying login state before scraping...');
+    const isActuallyLoggedIn = await isOnTimetablePage(timetableTab.id);
+    
+    if (!isActuallyLoggedIn) {
+      // User is not actually logged in, invalidate cache and show error
+      console.log('Login verification failed - user is not logged in');
+      await invalidateLoginCache();
+      await chrome.scripting.executeScript({
+        target: { tabId: timetableTab.id },
+        func: () => {
+          alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
+        }
+      });
+      throw new Error('NOT_LOGGED_IN');
+    }
+    
+    // If we got here, user is logged in - update cache to ensure it's fresh
+    if (isLoggedInFromCache) {
+      console.log('Login verification passed, cache was correct');
+    } else {
+      // Cache was wrong, update it
+      console.log('Login verification passed, updating cache');
+      await saveLoginStateToCache(true);
     }
     
     // Get localized messages for overlay
