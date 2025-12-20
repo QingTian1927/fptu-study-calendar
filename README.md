@@ -2,6 +2,8 @@
 
 A Chrome extension that helps FPT University students export their class schedules from FAP to Google Calendar, Apple Calendar, and other calendar applications.
 
+![FPTU Study Calendar Banner](./assets/readme_banner.png)
+
 ## 🌟 Features
 
 - **📅 Automatic Schedule Extraction**: Extracts your class schedule from FPTU FAP website
