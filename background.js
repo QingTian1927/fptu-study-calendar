@@ -8,6 +8,15 @@ const LOGIN_CACHE_KEY = 'fptu_calendar_login_state';
 const LOGIN_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 const FIRST_RUN_COMPLETED_KEY = 'fptu_calendar_first_run_completed';
 
+// Timing constants to replace magic numbers
+const WAIT_TIMES = {
+  PAGE_READY_DELAY: 500,              // Delay after page readyState is complete (ms)
+  POLLING_INTERVAL: 100,               // Interval for checking page/table readiness (ms)
+  CONTENT_SCRIPT_INIT: 1500,           // Delay for content script initialization (ms)
+  OVERLAY_INIT: 100,                   // Delay for overlay initialization (ms)
+  DATA_READY_TIMEOUT: 10000            // Timeout for dataReady message (ms)
+};
+
 // Log when service worker starts
 console.log('FPTU Study Calendar Exporter: Background service worker loaded');
 
@@ -148,10 +157,14 @@ async function checkLogin(tabId, forceCheck = false) {
     // Check cache first unless forced
     if (!forceCheck) {
       const cachedState = await getCachedLoginState();
-      if (cachedState !== null) {
-        console.log('Using cached login state, skipping actual check');
+      // Only trust cache if it says true (user is logged in)
+      // If cache says false, we must verify because user might have logged in since then
+      if (cachedState === true) {
+        console.log('Using cached login state (logged in), skipping actual check');
         return cachedState;
       }
+      // If cache is null, we need to check
+      // If cache is false, we also need to check (user might have logged in)
     }
     
     console.log('Performing actual login check on tab:', tabId);
@@ -163,13 +176,13 @@ async function checkLogin(tabId, forceCheck = false) {
         return new Promise((resolve) => {
           if (document.readyState === 'complete') {
             // Wait a bit more for any dynamic content
-            setTimeout(resolve, 500);
+            setTimeout(resolve, WAIT_TIMES.PAGE_READY_DELAY);
           } else {
             const checkReady = () => {
               if (document.readyState === 'complete') {
-                setTimeout(resolve, 500);
+                setTimeout(resolve, WAIT_TIMES.PAGE_READY_DELAY);
               } else {
-                setTimeout(checkReady, 100);
+                setTimeout(checkReady, WAIT_TIMES.POLLING_INTERVAL);
               }
             };
             checkReady();
@@ -380,12 +393,12 @@ async function extractWeekData(tabId) {
       // Add listener BEFORE injecting script
       chrome.runtime.onMessage.addListener(listener);
       
-      // Timeout after 10 seconds - fallback to polling if message doesn't arrive
+      // Timeout after configured delay - fallback to polling if message doesn't arrive
       timeoutId = setTimeout(() => {
         chrome.runtime.onMessage.removeListener(listener);
         console.log('Timeout waiting for dataReady message, falling back to polling');
         resolve(null); // Signal to use fallback
-      }, 10000);
+      }, WAIT_TIMES.DATA_READY_TIMEOUT);
     });
     
     // Inject content script (listener is already set up above)
@@ -401,7 +414,7 @@ async function extractWeekData(tabId) {
     if (weekData === null) {
       console.log('Using fallback polling method');
       // Wait a bit for content script to execute
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, WAIT_TIMES.CONTENT_SCRIPT_INIT));
       
       // Get the extracted data
       const dataResults = await chrome.scripting.executeScript({
@@ -469,17 +482,17 @@ async function selectWeek(tabId, weekValue, waitTime) {
         func: (timeout) => {
           return new Promise((resolve, reject) => {
             const startTime = Date.now();
-            const checkTable = () => {
-              const table = document.querySelector('table thead th[rowspan="2"]');
-              const tbody = document.querySelector('table tbody');
-              if (table && tbody && tbody.querySelectorAll('tr').length > 0) {
-                resolve();
-              } else if (Date.now() - startTime > timeout) {
-                reject(new Error('Table not ready within timeout'));
-              } else {
-                setTimeout(checkTable, 100);
-              }
-            };
+              const checkTable = () => {
+                const table = document.querySelector('table thead th[rowspan="2"]');
+                const tbody = document.querySelector('table tbody');
+                if (table && tbody && tbody.querySelectorAll('tr').length > 0) {
+                  resolve();
+                } else if (Date.now() - startTime > timeout) {
+                  reject(new Error('Table not ready within timeout'));
+                } else {
+                  setTimeout(checkTable, WAIT_TIMES.POLLING_INTERVAL);
+                }
+              };
             checkTable();
           });
         },
@@ -729,8 +742,10 @@ async function startScraping(startDate, endDate, waitTime) {
     
     // Step 2: Check cache to determine if we need login check
     const cachedLoginState = await getCachedLoginState();
-    // If first run, always force login check regardless of cache
-    const needsLoginCheck = isFirstRunFlag || cachedLoginState === null;
+    // If first run or cache says false/null, always force login check
+    // We can't trust a false cache because user might have logged in since then
+    // We can trust a true cache (unless first run) because we verify before scraping
+    const needsLoginCheck = isFirstRunFlag || cachedLoginState === null || cachedLoginState === false;
     const isLoggedInFromCache = cachedLoginState === true;
     
     if (isFirstRunFlag) {
@@ -913,7 +928,7 @@ async function startScraping(startDate, endDate, waitTime) {
     });
     
     // Wait briefly for content script to initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, WAIT_TIMES.OVERLAY_INIT));
     
     // Send message to show overlay with localized strings
     // Content script will check sessionStorage first, but this ensures it shows if sessionStorage wasn't set
@@ -1066,7 +1081,7 @@ async function startScraping(startDate, endDate, waitTime) {
           });
           
           // Wait briefly for content script to initialize
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, WAIT_TIMES.OVERLAY_INIT));
           
           // Send progress update to content script (overlay should already be showing)
           await sendMessageToContentScript(timetableTab.id, {

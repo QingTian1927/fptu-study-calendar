@@ -1,3 +1,10 @@
+// Timing constants to replace magic numbers
+const WAIT_TIMES = {
+  DEFAULT_WAIT_TIME: 3000,           // Default wait time for page operations (ms)
+  SCRAPING_TIMEOUT: 30000,           // Timeout for scraping operation (ms)
+  PROGRESS_RESET_DELAY: 3000         // Delay before resetting progress message (ms)
+};
+
 // Internationalization helper
 function getMessage(key, substitutions = []) {
   return chrome.i18n.getMessage(key, substitutions);
@@ -36,17 +43,6 @@ function validateDateRange(startDate, endDate) {
   // Check if start date is after end date
   if (start > end) {
     return { valid: false, error: 'Ngày bắt đầu phải trước ngày kết thúc' };
-  }
-  
-  // Get today's date (set to midnight for comparison)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  // Check if end date is in the past
-  const endDateOnly = new Date(end);
-  endDateOnly.setHours(0, 0, 0, 0);
-  if (endDateOnly < today) {
-    return { valid: false, error: 'Ngày kết thúc không thể là ngày trong quá khứ' };
   }
   
   // Check if date range is too large (more than 1 year)
@@ -186,7 +182,7 @@ async function initPopup() {
 
   // Load saved settings
   const result = await chrome.storage.local.get(['waitTime', 'startDate', 'endDate']);
-  const waitTime = result.waitTime || 3000;
+  const waitTime = result.waitTime || WAIT_TIMES.DEFAULT_WAIT_TIME;
   document.getElementById('waitTime').value = waitTime;
 
   // Load saved dates or use defaults
@@ -292,7 +288,7 @@ async function initPopup() {
         // Set timeout
         const timeout = setTimeout(() => {
           reject(new Error('Timeout: Không nhận được phản hồi sau 30 giây. Vui lòng kiểm tra console của background script.'));
-        }, 30000);
+        }, WAIT_TIMES.SCRAPING_TIMEOUT);
         
         chrome.runtime.sendMessage({
           action: 'startScraping',
@@ -379,11 +375,11 @@ async function initPopup() {
       progress.className = 'progress success';
       progress.textContent = `Đã xuất ${classes.length} lớp học thành công!`;
       
-      // Reset progress after 3 seconds
+      // Reset progress after configured delay
       setTimeout(() => {
         progress.className = 'progress';
         progress.textContent = getMessage('progressDefault');
-      }, 3000);
+      }, WAIT_TIMES.PROGRESS_RESET_DELAY);
     } catch (error) {
       console.error('Export error:', error);
       progress.className = 'progress error';
