@@ -1271,6 +1271,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'startScraping') {
     console.log('Starting scraping process...');
     
+    // Track if response has been sent to avoid calling sendResponse multiple times
+    let responseSent = false;
+    
+    // Helper function to safely send response
+    // Prevents calling sendResponse multiple times and handles closed channels gracefully
+    const safeSendResponse = (response) => {
+      if (responseSent) {
+        console.log('Response already sent, skipping duplicate response');
+        return;
+      }
+      
+      try {
+        sendResponse(response);
+        responseSent = true;
+      } catch (e) {
+        // Channel already closed (e.g., popup was closed) or other error
+        // This is expected behavior when user closes popup during scraping
+        console.log('Cannot send response (channel may be closed):', e.message);
+        responseSent = true; // Mark as sent to prevent retries
+      }
+    };
+    
     // Handle async response - must return true to keep channel open
     startScraping(message.startDate, message.endDate, message.waitTime, message.mergeMode)
       .then(async (result) => {
@@ -1285,22 +1307,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (result.errors && result.errors.length > 0) {
           console.log('Failed weeks:', result.errors);
         }
-        try {
-          sendResponse(result);
-        } catch (e) {
-          console.error('Error sending response:', e);
-        }
+        safeSendResponse(result);
       })
       .catch((error) => {
         console.error('Scraping error:', error);
-        try {
-          sendResponse({
-            success: false,
-            error: error.message
-          });
-        } catch (e) {
-          console.error('Error sending error response:', e);
-        }
+        safeSendResponse({
+          success: false,
+          error: error.message
+        });
       });
     return true; // Keep channel open for async response
   }
