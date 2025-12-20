@@ -1193,42 +1193,14 @@ function flattenWeeksToClasses(weeksData) {
   return classes;
 }
 
-// Merge classes arrays (update existing, add new)
-function mergeClasses(existingClasses, newClasses) {
-  const merged = [...existingClasses];
-  
-  newClasses.forEach(newClass => {
-    const index = merged.findIndex(c => c.activityId === newClass.activityId);
-    if (index !== -1) {
-      // Update existing
-      merged[index] = newClass;
-    } else {
-      // Add new
-      merged.push(newClass);
-    }
-  });
-  
-  return merged;
-}
-
-// Save scraped classes to storage
-async function saveScrapedClasses(weeksData, mergeMode = 'replace') {
+// Save scraped classes to storage (always replaces existing data)
+async function saveScrapedClasses(weeksData) {
   try {
     const newClasses = flattenWeeksToClasses(weeksData);
     
-    // Check if there's existing data
-    const existing = await chrome.storage.local.get(['scrapedClasses']);
-    const existingClasses = existing.scrapedClasses || [];
-    
-    let finalClasses;
-    if (existingClasses.length > 0 && mergeMode === 'merge') {
-      finalClasses = mergeClasses(existingClasses, newClasses);
-    } else {
-      finalClasses = newClasses;
-    }
-    
-    await chrome.storage.local.set({ scrapedClasses: finalClasses });
-    console.log(`Saved ${finalClasses.length} classes to storage (mode: ${mergeMode})`);
+    // Always replace existing data with new data
+    await chrome.storage.local.set({ scrapedClasses: newClasses });
+    console.log(`Saved ${newClasses.length} classes to storage (replaced existing data)`);
   } catch (error) {
     console.error('Error saving scraped classes:', error);
   }
@@ -1294,15 +1266,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     };
     
     // Handle async response - must return true to keep channel open
-    startScraping(message.startDate, message.endDate, message.waitTime, message.mergeMode)
+    startScraping(message.startDate, message.endDate, message.waitTime)
       .then(async (result) => {
         // Log to console
         console.log('Scraping completed:', result);
         if (result.success && result.data) {
           console.log('Scraped data (JSON):', JSON.stringify(result.data, null, 2));
           
-          // Save scraped classes to storage
-          await saveScrapedClasses(result.data, message.mergeMode || 'replace');
+          // Save scraped classes to storage (always replaces existing data)
+          await saveScrapedClasses(result.data);
         }
         if (result.errors && result.errors.length > 0) {
           console.log('Failed weeks:', result.errors);

@@ -219,17 +219,21 @@ async function initPopup() {
       return;
     }
 
-    // Check for existing data and prompt for merge/replace
+    // Check for existing data and show confirmation only if data exists
     const existing = await chrome.storage.local.get(['scrapedClasses']);
-    let mergeMode = 'replace';
+    
     if (existing.scrapedClasses && existing.scrapedClasses.length > 0) {
-      const userChoice = confirm(
+      // Only show confirmation if there's existing data that will be replaced
+      const userConfirmed = confirm(
         'Đã có dữ liệu lớp học được lưu trữ.\n\n' +
-        'Nhấn OK để thay thế tất cả dữ liệu cũ.\n' +
-        'Nhấn Cancel để hợp nhất với dữ liệu hiện có.'
+        'Dữ liệu cũ sẽ bị thay thế hoàn toàn bởi dữ liệu mới.\n\n' +
+        'Bạn có chắc chắn muốn tiếp tục?'
       );
-      mergeMode = userChoice ? 'replace' : 'merge';
+      if (!userConfirmed) {
+        return; // User cancelled
+      }
     }
+    // If no existing data, proceed directly without confirmation
 
     // Disable button and show progress
     scrapeButton.disabled = true;
@@ -250,8 +254,7 @@ async function initPopup() {
           action: 'startScraping',
           startDate,
           endDate,
-          waitTime,
-          mergeMode
+          waitTime
         }, (response) => {
           clearTimeout(timeout);
           
