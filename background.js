@@ -687,6 +687,14 @@ async function injectMinimalOverlay(tabId, title, message, dismissText, progress
 // Track active scraping sessions for overlay injection
 const activeScrapingTabs = new Map(); // tabId -> { title, message, dismissText }
 
+// Clean up activeScrapingTabs when tabs are closed to prevent memory leaks
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (activeScrapingTabs.has(tabId)) {
+    console.log('Tab closed, removing from activeScrapingTabs:', tabId);
+    activeScrapingTabs.delete(tabId);
+  }
+});
+
 // Listen for tab updates to inject overlay immediately when page starts loading
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   // Only handle timetable page
@@ -1197,6 +1205,13 @@ async function startScraping(startDate, endDate, waitTime) {
         // Tab may already be closed by user or browser
         console.log('Tab already closed or could not be removed:', e.message);
       }
+    }
+    
+    // Always cleanup activeScrapingTabs entry if scraping didn't complete successfully
+    // (Successful completion already cleans up in the try block)
+    if (timetableTab && !scrapingSuccessful && activeScrapingTabs.has(timetableTab.id)) {
+      console.log('Cleaning up: removing from activeScrapingTabs due to error');
+      activeScrapingTabs.delete(timetableTab.id);
     }
   }
 }
