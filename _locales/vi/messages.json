@@ -180,11 +180,11 @@
     "description": "Nút xuất file .ics"
   },
   "prevWeek": {
-    "message": "← Tuần trước",
+    "message": "Tuần trước",
     "description": "Nút chuyển sang tuần trước"
   },
   "nextWeek": {
-    "message": "Tuần sau →",
+    "message": "Tuần sau",
     "description": "Nút chuyển sang tuần sau"
   },
   "sidebarOverview": {
