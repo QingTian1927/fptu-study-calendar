@@ -17,6 +17,53 @@ function getEndOfYear(year) {
   return new Date(year, 11, 31); // December 31
 }
 
+// Comprehensive date range validation
+function validateDateRange(startDate, endDate) {
+  // Check if dates are empty
+  if (!startDate || !endDate) {
+    return { valid: false, error: 'Vui lòng chọn ngày bắt đầu và ngày kết thúc' };
+  }
+  
+  // Parse dates
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  // Check if dates are valid
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return { valid: false, error: 'Định dạng ngày không hợp lệ' };
+  }
+  
+  // Check if start date is after end date
+  if (start > end) {
+    return { valid: false, error: 'Ngày bắt đầu phải trước ngày kết thúc' };
+  }
+  
+  // Get today's date (set to midnight for comparison)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Check if end date is in the past
+  const endDateOnly = new Date(end);
+  endDateOnly.setHours(0, 0, 0, 0);
+  if (endDateOnly < today) {
+    return { valid: false, error: 'Ngày kết thúc không thể là ngày trong quá khứ' };
+  }
+  
+  // Check if date range is too large (more than 1 year)
+  const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+  if (daysDiff > 365) {
+    return { valid: false, error: 'Khoảng thời gian không được vượt quá 1 năm (365 ngày)' };
+  }
+  
+  // Check if date range is too small (less than 1 day)
+  if (daysDiff < 1) {
+    return { valid: false, error: 'Khoảng thời gian phải ít nhất 1 ngày' };
+  }
+  
+  // All validations passed
+  return { valid: true };
+}
+
 // Theme management
 function getSystemTheme() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -209,13 +256,10 @@ async function initPopup() {
     const endDate = document.getElementById('endDate').value;
     const waitTime = parseInt(document.getElementById('waitTime').value, 10);
 
-    if (!startDate || !endDate) {
-      alert('Vui lòng chọn ngày bắt đầu và ngày kết thúc');
-      return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
-      alert('Ngày bắt đầu phải trước ngày kết thúc');
+    // Comprehensive date validation
+    const validation = validateDateRange(startDate, endDate);
+    if (!validation.valid) {
+      alert(validation.error);
       return;
     }
 
