@@ -689,6 +689,8 @@ async function startScraping(startDate, endDate, waitTime) {
   const allWeeksData = [];
   let timetableTab = null;
   let shouldCloseTab = false; // Track if we created a new tab that should be closed on error
+  let tabToClose = null; // Track the tab ID that should be closed on error
+  let scrapingSuccessful = false; // Track if scraping completed successfully
   
   try {
     // Step 1: Check if this is the first run (after install/reload)
@@ -714,12 +716,14 @@ async function startScraping(startDate, endDate, waitTime) {
         console.log('First run: creating tab to homepage for login check');
         fapTab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
         shouldCloseTab = true;
+        tabToClose = fapTab.id;
         await new Promise(resolve => setTimeout(resolve, waitTime));
       } else if (isLoggedInFromCache) {
         // Cache says logged in, create tab directly to timetable page (skip homepage)
         console.log('Cache indicates logged in, creating tab directly to timetable page');
         fapTab = await chrome.tabs.create({ url: TIMETABLE_URL, active: false });
         shouldCloseTab = true;
+        tabToClose = fapTab.id;
         await new Promise(resolve => setTimeout(resolve, waitTime));
         timetableTab = fapTab;
       } else {
@@ -727,6 +731,7 @@ async function startScraping(startDate, endDate, waitTime) {
         console.log('Cache invalid/missing, creating tab to homepage for login check');
         fapTab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
         shouldCloseTab = true;
+        tabToClose = fapTab.id;
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     } else {
@@ -795,11 +800,20 @@ async function startScraping(startDate, endDate, waitTime) {
       if (!isAlreadyOnTimetable) {
         console.log('Not on timetable page, navigating...');
         timetableTab = fapTab;
+        if (shouldCloseTab) {
+          tabToClose = timetableTab.id;
+        }
         await navigateToUrl(timetableTab.id, TIMETABLE_URL, waitTime);
       } else {
         console.log('Already on timetable page, reusing it');
         timetableTab = fapTab;
+        if (shouldCloseTab) {
+          tabToClose = timetableTab.id;
+        }
       }
+    } else if (shouldCloseTab) {
+      // timetableTab was already set, update tabToClose
+      tabToClose = timetableTab.id;
     }
     
     // Step 5.5: Always verify login state before starting to scrape
@@ -1110,6 +1124,9 @@ async function startScraping(startDate, endDate, waitTime) {
       });
     }
     
+    // Mark scraping as successful before returning
+    scrapingSuccessful = true;
+    
     // Return results
     return {
       success: true,
@@ -1147,6 +1164,17 @@ async function startScraping(startDate, endDate, waitTime) {
       success: false,
       error: error.message
     };
+  } finally {
+    // Always cleanup: close tab if we created it and scraping failed
+    if (shouldCloseTab && tabToClose && !scrapingSuccessful) {
+      try {
+        console.log('Cleaning up: closing tab', tabToClose, 'due to error');
+        await chrome.tabs.remove(tabToClose);
+      } catch (e) {
+        // Tab may already be closed by user or browser
+        console.log('Tab already closed or could not be removed:', e.message);
+      }
+    }
   }
 }
 
