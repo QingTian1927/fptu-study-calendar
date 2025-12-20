@@ -873,6 +873,12 @@ function initI18n() {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', async () => {
+  // Set icon path
+  const headerIcon = document.querySelector('.header-icon');
+  if (headerIcon && typeof chrome !== 'undefined' && chrome.runtime) {
+    headerIcon.src = chrome.runtime.getURL('icons/icon.png');
+  }
+  
   // Initialize i18n
   initI18n();
   

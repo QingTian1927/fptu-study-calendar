@@ -176,6 +176,16 @@
 
     .header-content {
       flex: 1;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .header-icon {
+      width: calc(var(--font-size-md) * var(--line-height-tight) + 2px + var(--font-size-xs) * var(--line-height-normal));
+      height: calc(var(--font-size-md) * var(--line-height-tight) + 2px + var(--font-size-xs) * var(--line-height-normal));
+      flex-shrink: 0;
+      margin-right: 5px;
     }
 
     .header h1 {
@@ -652,8 +662,11 @@
   <!-- Header -->
   <div class="header">
     <div class="header-content">
-      <h1 id="extensionName">FPTU Study Calendar</h1>
-      <div class="header-subtitle" id="headerSubtitle"></div>
+      <img src="icons/icon.png" alt="FPTU Study Calendar" class="header-icon" />
+      <div>
+        <h1 id="extensionName">FPTU Study Calendar</h1>
+        <div class="header-subtitle" id="headerSubtitle"></div>
+      </div>
     </div>
     <div class="header-actions">
       <button class="btn-icon" id="settingsButton" title="Settings">

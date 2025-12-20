@@ -159,8 +159,21 @@
 
     .header-title-group {
       display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .header-title-content {
+      display: flex;
       flex-direction: column;
       gap: var(--space-xs);
+    }
+
+    .header-icon {
+      width: calc(var(--font-size-2xl) * var(--line-height-tight) + var(--space-xs) + var(--font-size-sm) * var(--line-height-normal));
+      height: calc(var(--font-size-2xl) * var(--line-height-tight) + var(--space-xs) + var(--font-size-sm) * var(--line-height-normal));
+      flex-shrink: 0;
+      margin-right: 5px;
     }
 
     .header h1 {
@@ -1161,8 +1174,11 @@
 <body>
   <div class="header">
     <div class="header-title-group">
-      <h1>FPTU Study Calendar</h1>
-      <div class="header-subtitle" id="headerSubtitle">Chọn tuần để xem lịch học</div>
+      <img src="icons/icon.png" alt="FPTU Study Calendar" class="header-icon" />
+      <div class="header-title-content">
+        <h1>FPTU Study Calendar</h1>
+        <div class="header-subtitle" id="headerSubtitle">Chọn tuần để xem lịch học</div>
+      </div>
     </div>
     <div class="view-controls">
       <div class="pill-switcher">
