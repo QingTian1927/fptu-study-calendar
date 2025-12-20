@@ -6,6 +6,7 @@ const LOGIN_CHECK_SELECTOR = '#ctl00_divUser';
 const MAX_RETRIES = 3;
 const LOGIN_CACHE_KEY = 'fptu_calendar_login_state';
 const LOGIN_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+const FIRST_RUN_COMPLETED_KEY = 'fptu_calendar_first_run_completed';
 
 // Log when service worker starts
 console.log('FPTU Study Calendar Exporter: Background service worker loaded');
@@ -102,6 +103,38 @@ async function invalidateLoginCache() {
   }
 }
 
+// Check if this is the first run
+async function isFirstRun() {
+  try {
+    const result = await chrome.storage.local.get(FIRST_RUN_COMPLETED_KEY);
+    return !result[FIRST_RUN_COMPLETED_KEY];
+  } catch (error) {
+    console.error('Error checking first run status:', error);
+    // On error, assume it's not first run to avoid forcing login check unnecessarily
+    return false;
+  }
+}
+
+// Mark first run as completed
+async function markFirstRunCompleted() {
+  try {
+    await chrome.storage.local.set({ [FIRST_RUN_COMPLETED_KEY]: true });
+    console.log('Marked first run as completed');
+  } catch (error) {
+    console.error('Error marking first run as completed:', error);
+  }
+}
+
+// Reset first run flag (called on install/reload)
+async function resetFirstRunFlag() {
+  try {
+    await chrome.storage.local.remove(FIRST_RUN_COMPLETED_KEY);
+    console.log('Reset first run flag');
+  } catch (error) {
+    console.error('Error resetting first run flag:', error);
+  }
+}
+
 // Check if already on timetable page
 async function isOnTimetablePage(tabId) {
   try {
@@ -121,25 +154,88 @@ async function isOnTimetablePage(tabId) {
   }
 }
 
-// Check if user is logged in (with caching)
+// Find existing FAP tab (login page or timetable page)
+async function findExistingFAPTab() {
+  try {
+    const tabs = await chrome.tabs.query({ url: ['https://fap.fpt.edu.vn/*'] });
+    
+    // Look for timetable page first (preferred)
+    for (const tab of tabs) {
+      if (tab.url && tab.url.includes('ScheduleOfWeek.aspx')) {
+        const isOnTimetable = await isOnTimetablePage(tab.id);
+        if (isOnTimetable) {
+          console.log('Found existing timetable tab:', tab.id);
+          return tab;
+        }
+      }
+    }
+    
+    // Look for any FAP tab (could be login page or other pages)
+    for (const tab of tabs) {
+      if (tab.url && tab.url.startsWith(FAP_BASE_URL)) {
+        console.log('Found existing FAP tab:', tab.id, tab.url);
+        return tab;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error finding existing FAP tab:', error);
+    return null;
+  }
+}
+
+// Check if user is logged in (with caching and proper page load waiting)
 async function checkLogin(tabId, forceCheck = false) {
   try {
     // Check cache first unless forced
     if (!forceCheck) {
       const cachedState = await getCachedLoginState();
       if (cachedState !== null) {
+        console.log('Using cached login state, skipping actual check');
         return cachedState;
       }
     }
     
-    // Perform actual login check
+    console.log('Performing actual login check on tab:', tabId);
+    
+    // Wait for page to fully load and DOM to be ready before checking
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        return new Promise((resolve) => {
+          if (document.readyState === 'complete') {
+            // Wait a bit more for any dynamic content
+            setTimeout(resolve, 500);
+          } else {
+            const checkReady = () => {
+              if (document.readyState === 'complete') {
+                setTimeout(resolve, 500);
+              } else {
+                setTimeout(checkReady, 100);
+              }
+            };
+            checkReady();
+          }
+        });
+      }
+    });
+    
+    // Perform actual login check with retry
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        return document.querySelector('#ctl00_divUser') !== null;
+        // Try to find the login indicator element
+        const userDiv = document.querySelector('#ctl00_divUser');
+        // Also check for common login page elements to ensure we're not on login page
+        const loginForm = document.querySelector('#ctl00_mainContent_btnLogin');
+        // If user div exists and we're not on login page, user is logged in
+        return userDiv !== null && loginForm === null;
       }
     });
     const isLoggedIn = results[0].result;
+    
+    console.log('Login check result:', isLoggedIn);
     
     // Save to cache
     await saveLoginStateToCache(isLoggedIn);
@@ -635,28 +731,118 @@ async function startScraping(startDate, endDate, waitTime) {
   const errors = [];
   const allWeeksData = [];
   let timetableTab = null;
+  let shouldCloseTab = false; // Track if we created a new tab that should be closed on error
   
   try {
-    // Always create a new tab for FAP homepage
-    const homeTab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
-    await new Promise(resolve => setTimeout(resolve, waitTime));
+    // Step 1: Check if this is the first run (after install/reload)
+    const isFirstRunFlag = await isFirstRun();
     
-    // Step 1: Check login
-    const isLoggedIn = await checkLogin(homeTab.id);
-    if (!isLoggedIn) {
-      // Show alert to user
-      await chrome.scripting.executeScript({
-        target: { tabId: homeTab.id },
-        func: () => {
-          alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
-        }
-      });
-      throw new Error('NOT_LOGGED_IN');
+    // Step 2: Check cache to determine if we need login check
+    const cachedLoginState = await getCachedLoginState();
+    // If first run, always force login check regardless of cache
+    const needsLoginCheck = isFirstRunFlag || cachedLoginState === null;
+    const isLoggedInFromCache = cachedLoginState === true;
+    
+    if (isFirstRunFlag) {
+      console.log('First run detected, will force login check');
     }
     
-    // Step 2: Reuse the login page tab - navigate it to timetable page (keep in background)
-    timetableTab = homeTab;
-    await navigateToUrl(timetableTab.id, TIMETABLE_URL, waitTime);
+    // Step 3: Find existing FAP tab or create new one based on login state
+    let fapTab = await findExistingFAPTab();
+    
+    if (!fapTab) {
+      // No existing tab found
+      // On first run, always go to homepage to ensure proper login check
+      if (isFirstRunFlag) {
+        console.log('First run: creating tab to homepage for login check');
+        fapTab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
+        shouldCloseTab = true;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else if (isLoggedInFromCache) {
+        // Cache says logged in, create tab directly to timetable page (skip homepage)
+        console.log('Cache indicates logged in, creating tab directly to timetable page');
+        fapTab = await chrome.tabs.create({ url: TIMETABLE_URL, active: false });
+        shouldCloseTab = true;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        timetableTab = fapTab;
+      } else {
+        // Need to check login, create tab to homepage
+        console.log('Cache invalid/missing, creating tab to homepage for login check');
+        fapTab = await chrome.tabs.create({ url: FAP_BASE_URL, active: false });
+        shouldCloseTab = true;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    } else {
+      console.log('Reusing existing FAP tab:', fapTab.id);
+      // If we found an existing tab, make sure it's loaded
+      const tabInfo = await chrome.tabs.get(fapTab.id);
+      if (tabInfo.status !== 'complete') {
+        await new Promise(resolve => {
+          const listener = (updatedTabId, changeInfo) => {
+            if (updatedTabId === fapTab.id && changeInfo.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(listener);
+              setTimeout(resolve, waitTime);
+            }
+          };
+          chrome.tabs.onUpdated.addListener(listener);
+        });
+      }
+    }
+    
+    // Step 4: Perform login check only if needed
+    if (needsLoginCheck) {
+      if (isFirstRunFlag) {
+        console.log('First run: performing login check');
+      } else {
+        console.log('Cache invalid/missing, performing login check');
+      }
+      const isLoggedIn = await checkLogin(fapTab.id, false);
+      if (!isLoggedIn) {
+        // Show alert to user
+        await chrome.scripting.executeScript({
+          target: { tabId: fapTab.id },
+          func: () => {
+            alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
+          }
+        });
+        throw new Error('NOT_LOGGED_IN');
+      }
+      console.log('Login check passed, user is logged in');
+      // Mark first run as completed after successful login check
+      if (isFirstRunFlag) {
+        await markFirstRunCompleted();
+      }
+    } else if (!isLoggedInFromCache) {
+      // Cache says not logged in, but check anyway (user might have logged in since then)
+      console.log('Cached state indicates not logged in, performing login check');
+      const isLoggedIn = await checkLogin(fapTab.id, true); // Force check to update cache
+      if (!isLoggedIn) {
+        await chrome.scripting.executeScript({
+          target: { tabId: fapTab.id },
+          func: () => {
+            alert('Bạn chưa đăng nhập vào FAP. Vui lòng đăng nhập và thử lại.');
+          }
+        });
+        throw new Error('NOT_LOGGED_IN');
+      }
+    } else {
+      // Cache says logged in, skip login check entirely
+      console.log('Using cached login state (logged in), skipping login check');
+    }
+    
+    // Step 5: Navigate to timetable page if not already there
+    // (Only if we haven't already created a tab directly to timetable page)
+    if (!timetableTab) {
+      const isAlreadyOnTimetable = await isOnTimetablePage(fapTab.id);
+      if (!isAlreadyOnTimetable) {
+        console.log('Not on timetable page, navigating...');
+        timetableTab = fapTab;
+        await navigateToUrl(timetableTab.id, TIMETABLE_URL, waitTime);
+      } else {
+        console.log('Already on timetable page, reusing it');
+        timetableTab = fapTab;
+      }
+    }
     
     // Get localized messages for overlay
     const overlayTitle = chrome.i18n.getMessage('overlayTitle');
@@ -876,6 +1062,14 @@ async function startScraping(startDate, endDate, waitTime) {
             throw new Error('Failed to extract data - invalid format');
           }
         } catch (error) {
+          // Check if error might be due to login expiration
+          if (error.message.includes('login') || error.message.includes('Login') || 
+              error.message.includes('NOT_LOGGED_IN') || error.message.includes('unauthorized')) {
+            console.log('Possible login expiration detected, invalidating cache');
+            await invalidateLoginCache();
+            throw new Error('NOT_LOGGED_IN');
+          }
+          
           retries++;
           if (retries >= MAX_RETRIES) {
             errors.push({
@@ -1027,19 +1221,27 @@ async function saveScrapedClasses(weeksData, mergeMode = 'replace') {
 }
 
 // Clear scraped data and date inputs on browser startup
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
   chrome.storage.local.remove(['scrapedClasses', 'startDate', 'endDate']);
-  console.log('Cleared scraped classes and date inputs on browser startup');
+  // Reset first run flag on browser startup (service worker may have been terminated)
+  await resetFirstRunFlag();
+  console.log('Cleared scraped classes and date inputs on browser startup, reset first run flag');
 });
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  // Reset first run flag on install or update
+  await resetFirstRunFlag();
+  console.log('Reset first run flag on install/update');
+  
   // Only clear on first install, not on updates
-  chrome.storage.local.get(['scrapedClasses'], (result) => {
-    if (!result.scrapedClasses) {
-      chrome.storage.local.remove(['scrapedClasses']);
-      console.log('Cleared scraped classes on first install');
-    }
-  });
+  if (details.reason === 'install') {
+    chrome.storage.local.get(['scrapedClasses'], (result) => {
+      if (!result.scrapedClasses) {
+        chrome.storage.local.remove(['scrapedClasses']);
+        console.log('Cleared scraped classes on first install');
+      }
+    });
+  }
 });
 
 // Message listener
