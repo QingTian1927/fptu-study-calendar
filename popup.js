@@ -80,7 +80,7 @@ async function initPopup() {
   document.getElementById('aboutAuthorLabel').textContent = getMessage('aboutAuthorLabel');
   document.getElementById('aboutGitHubLabel').textContent = getMessage('aboutGitHubLabel');
   document.getElementById('aboutHelpLabel').textContent = getMessage('aboutHelpLabel');
-  document.getElementById('aboutGitHub').textContent = getMessage('aboutGitHubValue');
+  // GitHub link is set in HTML, no need to set textContent
   document.getElementById('themeLabel').textContent = getMessage('themeLabel');
   document.getElementById('themeSystemOption').textContent = getMessage('themeSystem');
   document.getElementById('themeLightOption').textContent = getMessage('themeLight');
