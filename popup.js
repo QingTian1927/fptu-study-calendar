@@ -313,10 +313,41 @@ async function initPopup() {
     chrome.tabs.create({ url: chrome.runtime.getURL('calendar.html') });
   });
 
-  // Export button handler (placeholder for MVP)
-  exportButton.addEventListener('click', () => {
-    // This will be implemented later for .ics export
-    alert('Tính năng xuất file .ics sẽ được triển khai trong phiên bản tiếp theo');
+  // Export button handler
+  exportButton.addEventListener('click', async () => {
+    try {
+      // Get classes from storage
+      const result = await chrome.storage.local.get(['scrapedClasses']);
+      const classes = result.scrapedClasses || [];
+      
+      if (classes.length === 0) {
+        alert('Không có dữ liệu lớp học để xuất. Vui lòng trích xuất lịch học trước.');
+        return;
+      }
+      
+      // Export to ICS
+      exportToIcs(classes);
+      
+      // Show success message
+      progress.className = 'progress success';
+      progress.textContent = `Đã xuất ${classes.length} lớp học thành công!`;
+      
+      // Reset progress after 3 seconds
+      setTimeout(() => {
+        progress.className = 'progress';
+        progress.textContent = getMessage('progressDefault');
+      }, 3000);
+    } catch (error) {
+      console.error('Export error:', error);
+      progress.className = 'progress error';
+      progress.textContent = `Lỗi xuất file: ${error.message}`;
+      
+      // Reset progress after 5 seconds
+      setTimeout(() => {
+        progress.className = 'progress';
+        progress.textContent = getMessage('progressDefault');
+      }, 5000);
+    }
   });
 
   // Check if there's existing scraped data to enable preview/export buttons

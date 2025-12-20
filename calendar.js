@@ -1002,9 +1002,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('deleteBtn').addEventListener('click', deleteClass);
   document.getElementById('cancelBtn').addEventListener('click', closeEditModal);
 
-  // Export button (placeholder for now)
-  document.getElementById('exportBtn').addEventListener('click', () => {
-    alert('Tính năng xuất file sẽ được triển khai sau');
+  // Export button handler
+  document.getElementById('exportBtn').addEventListener('click', async () => {
+    try {
+      // Get classes from storage (all classes, not filtered)
+      const result = await chrome.storage.local.get(['scrapedClasses']);
+      const classes = result.scrapedClasses || [];
+      
+      if (classes.length === 0) {
+        alert(getMessage('emptyState') + '. ' + 'Vui lòng trích xuất lịch học trước.');
+        return;
+      }
+      
+      // Export to ICS
+      exportToIcs(classes);
+      
+      // Show brief success message (optional - could add a toast notification)
+      console.log(`Exported ${classes.length} classes to ICS file`);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(`Lỗi xuất file: ${error.message}`);
+    }
   });
 
   // Close modal on background click

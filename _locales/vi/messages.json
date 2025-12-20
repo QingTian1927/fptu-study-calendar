@@ -338,6 +338,34 @@
   "aboutGitHubValue": {
     "message": "sắp ra mắt",
     "description": "Giá trị GitHub (coming soon)"
+  },
+  "icsLocationLabel": {
+    "message": "Lớp học",
+    "description": "Nhãn địa điểm trong mô tả .ics"
+  },
+  "icsRelocatedWarning": {
+    "message": "⚠️ Lớp học này đã được đổi slot",
+    "description": "Cảnh báo lớp học đã đổi slot trong mô tả .ics"
+  },
+  "icsSummaryRelocated": {
+    "message": "Đổi slot",
+    "description": "Nhãn lớp học đã đổi slot trong tiêu đề sự kiện .ics"
+  },
+  "icsMeetLabel": {
+    "message": "Google Meet",
+    "description": "Nhãn Google Meet trong mô tả .ics"
+  },
+  "icsHasEduNext": {
+    "message": "* Có thảo luận trên EduNext",
+    "description": "Thông báo có thảo luận trên EduNext trong mô tả .ics"
+  },
+  "icsHasMaterials": {
+    "message": "* Có tài liệu trên FLM",
+    "description": "Thông báo có tài liệu trên FLM trong mô tả .ics"
+  },
+  "icsViewLinksNote": {
+    "message": "(Vui lòng xem lịch trên FAP để xem rõ link)",
+    "description": "Ghi chú xem link trên FAP trong mô tả .ics"
   }
 }
 
