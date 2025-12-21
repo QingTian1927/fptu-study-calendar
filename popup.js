@@ -136,6 +136,60 @@ async function initPopup() {
   // Set page title
   document.title = getMessage('popupTitle');
   
+  // Initialize footer
+  document.getElementById('footerMadeBy').textContent = getMessage('footerMadeBy');
+  const footerHelpLink = document.getElementById('footerHelpLink');
+  footerHelpLink.textContent = getMessage('footerHelpLink');
+  
+  // Initialize help overlay
+  const helpOverlay = document.getElementById('helpOverlay');
+  const helpOverlayClose = document.getElementById('helpOverlayClose');
+  
+  // Set help content localization
+  document.getElementById('helpTitle').textContent = getMessage('helpTitle');
+  document.getElementById('helpSectionGettingStarted').textContent = getMessage('helpSectionGettingStarted');
+  document.getElementById('helpStep1').textContent = getMessage('helpStep1');
+  document.getElementById('helpStep2').textContent = getMessage('helpStep2');
+  document.getElementById('helpStep3').textContent = getMessage('helpStep3');
+  document.getElementById('helpStep4').textContent = getMessage('helpStep4');
+  document.getElementById('helpSectionFeatures').textContent = getMessage('helpSectionFeatures');
+  // Use innerHTML for items with HTML formatting
+  document.getElementById('helpFeature1').innerHTML = getMessage('helpFeature1');
+  document.getElementById('helpFeature2').innerHTML = getMessage('helpFeature2');
+  document.getElementById('helpFeature3').innerHTML = getMessage('helpFeature3');
+  document.getElementById('helpSectionTips').textContent = getMessage('helpSectionTips');
+  document.getElementById('helpTip1').textContent = getMessage('helpTip1');
+  document.getElementById('helpTip2').textContent = getMessage('helpTip2');
+  document.getElementById('helpTip3').textContent = getMessage('helpTip3');
+  document.getElementById('helpTip4').textContent = getMessage('helpTip4');
+  document.getElementById('helpSectionTroubleshooting').textContent = getMessage('helpSectionTroubleshooting');
+  // Use innerHTML for items with HTML formatting
+  document.getElementById('helpTrouble1').innerHTML = getMessage('helpTrouble1');
+  document.getElementById('helpTrouble2').innerHTML = getMessage('helpTrouble2');
+  document.getElementById('helpTrouble3').innerHTML = getMessage('helpTrouble3');
+  document.getElementById('helpTrouble4').innerHTML = getMessage('helpTrouble4');
+  document.getElementById('helpSectionSupport').textContent = getMessage('helpSectionSupport');
+  document.getElementById('helpSupportMessage').textContent = getMessage('helpSupportMessage');
+  document.getElementById('helpSupportGitHub').textContent = getMessage('helpSupportGitHub');
+  document.getElementById('helpSupportEmail').textContent = getMessage('helpSupportEmail');
+  
+  // Footer help link click handler
+  footerHelpLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    helpOverlay.classList.add('active');
+  });
+  
+  helpOverlayClose.addEventListener('click', () => {
+    helpOverlay.classList.remove('active');
+  });
+  
+  // Close help overlay when clicking outside
+  helpOverlay.addEventListener('click', (e) => {
+    if (e.target === helpOverlay) {
+      helpOverlay.classList.remove('active');
+    }
+  });
+  
   // Initialize settings overlay
   const settingsButton = document.getElementById('settingsButton');
   const settingsOverlay = document.getElementById('settingsOverlay');
@@ -158,8 +212,12 @@ async function initPopup() {
   
   // Close overlay with Escape key
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && settingsOverlay.classList.contains('active')) {
-      settingsOverlay.classList.remove('active');
+    if (e.key === 'Escape') {
+      if (helpOverlay.classList.contains('active')) {
+        helpOverlay.classList.remove('active');
+      } else if (settingsOverlay.classList.contains('active')) {
+        settingsOverlay.classList.remove('active');
+      }
     }
   });
 

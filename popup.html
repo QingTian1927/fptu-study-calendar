@@ -143,19 +143,21 @@
       box-sizing: border-box;
     }
 
-    body {
-      width: 320px;
-      min-height: auto;
-      max-height: 500px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: var(--color-background);
-      color: var(--color-text-primary);
-      font-size: var(--font-size-base);
-      line-height: var(--line-height-normal);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow-y: auto;
-    }
+  body {
+    width: 320px;
+    min-height: auto;
+    max-height: 500px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
 
     /* ========================================
        HEADER SECTION
@@ -249,6 +251,8 @@
     
     .content {
       padding: var(--space-lg) var(--space-md);
+      flex: 1;
+      overflow-y: auto;
     }
 
     .section {
@@ -389,12 +393,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-height: 48px;
     }
 
     .overlay-header h2 {
       font-size: var(--font-size-md);
       font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
+      line-height: 24px;
+      margin: 0;
+      padding: 0;
+      height: 24px;
+      display: flex;
+      align-items: center;
     }
 
     .overlay-close {
@@ -410,6 +421,9 @@
       color: var(--color-text-secondary);
       border-radius: var(--border-radius-sm);
       transition: all var(--transition-base);
+      flex-shrink: 0;
+      line-height: 24px;
+      margin: 0;
     }
 
     .overlay-close:hover {
@@ -424,8 +438,11 @@
 
     .overlay-close::before {
       content: '×';
-      font-size: 24px;
+      font-size: 20px;
       line-height: 1;
+      display: block;
+      margin: 0;
+      padding: 0;
     }
 
     .overlay-body {
@@ -656,6 +673,95 @@
     .mt-md {
       margin-top: var(--space-md);
     }
+
+    /* ========================================
+       HELP OVERLAY CONTENT
+       ======================================== */
+    
+    .help-content {
+      font-size: var(--font-size-sm);
+      line-height: var(--line-height-normal);
+    }
+
+    .help-section {
+      margin-bottom: var(--space-lg);
+    }
+
+    .help-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .help-section h3 {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .help-list {
+      margin-left: var(--space-md);
+      margin-bottom: 0;
+      padding-left: var(--space-sm);
+    }
+
+    .help-list li {
+      margin-bottom: var(--space-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .help-list li:last-child {
+      margin-bottom: 0;
+    }
+
+    .help-list li strong {
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .help-section p {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      line-height: var(--line-height-normal);
+      margin-bottom: var(--space-sm);
+    }
+
+    .help-section a {
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    .help-section a:hover {
+      text-decoration: underline;
+    }
+
+    /* ========================================
+       FOOTER
+       ======================================== */
+    
+    .footer {
+      padding: var(--space-sm) var(--space-md);
+      border-top: var(--border-width) solid var(--color-border);
+      background: var(--color-background);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      flex-shrink: 0;
+    }
+
+    .footer-link {
+      color: var(--color-accent);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color var(--transition-base);
+    }
+
+    .footer-link:hover {
+      color: var(--color-accent-hover);
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -722,6 +828,79 @@
 
     <!-- Progress Indicator -->
     <div class="progress" id="progress"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span id="footerMadeBy"></span>
+    <a href="#" id="footerHelpLink" class="footer-link"></a>
+  </div>
+
+  <!-- Help Overlay -->
+  <div class="overlay" id="helpOverlay">
+    <div class="overlay-content">
+      <div class="overlay-header">
+        <h2 id="helpTitle"></h2>
+        <button class="overlay-close" id="helpOverlayClose"></button>
+      </div>
+      <div class="overlay-body">
+        <div class="help-content">
+          <div class="help-section">
+            <h3 id="helpSectionGettingStarted"></h3>
+            <ol class="help-list">
+              <li id="helpStep1"></li>
+              <li id="helpStep2"></li>
+              <li id="helpStep3"></li>
+              <li id="helpStep4"></li>
+            </ol>
+          </div>
+          
+          <div class="help-section">
+            <h3 id="helpSectionFeatures"></h3>
+            <ul class="help-list">
+              <li id="helpFeature1"></li>
+              <li id="helpFeature2"></li>
+              <li id="helpFeature3"></li>
+            </ul>
+          </div>
+          
+          <div class="help-section">
+            <h3 id="helpSectionTips"></h3>
+            <ul class="help-list">
+              <li id="helpTip1"></li>
+              <li id="helpTip2"></li>
+              <li id="helpTip3"></li>
+              <li id="helpTip4"></li>
+            </ul>
+          </div>
+          
+          <div class="help-section">
+            <h3 id="helpSectionTroubleshooting"></h3>
+            <ul class="help-list">
+              <li id="helpTrouble1"></li>
+              <li id="helpTrouble2"></li>
+              <li id="helpTrouble3"></li>
+              <li id="helpTrouble4"></li>
+            </ul>
+          </div>
+          
+          <div class="help-section">
+            <h3 id="helpSectionSupport"></h3>
+            <p id="helpSupportMessage"></p>
+            <ul class="help-list">
+              <li>
+                <strong id="helpSupportGitHub"></strong>: 
+                <a href="https://github.com/QingTian1927/fptu-study-calendar/issues" target="_blank">github.com/QingTian1927/fptu-study-calendar/issues</a>
+              </li>
+              <li>
+                <strong id="helpSupportEmail"></strong>: 
+                <a href="mailto:buidungnd.2005@gmail.com">buidungnd.2005@gmail.com</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Settings Overlay -->

@@ -366,6 +366,110 @@
   "icsViewLinksNote": {
     "message": "(Vui lòng xem lịch trên FAP để xem rõ link)",
     "description": "Ghi chú xem link trên FAP trong mô tả .ics"
+  },
+  "helpTitle": {
+    "message": "Hướng dẫn sử dụng",
+    "description": "Tiêu đề modal hướng dẫn"
+  },
+  "helpSectionGettingStarted": {
+    "message": "Bắt đầu",
+    "description": "Tiêu đề phần bắt đầu trong hướng dẫn"
+  },
+  "helpStep1": {
+    "message": "Đảm bảo bạn đã đăng nhập vào FAP (fap.fpt.edu.vn)",
+    "description": "Bước 1 trong hướng dẫn"
+  },
+  "helpStep2": {
+    "message": "Chọn khoảng thời gian bạn muốn trích xuất lịch học",
+    "description": "Bước 2 trong hướng dẫn"
+  },
+  "helpStep3": {
+    "message": "Nhấn nút \"Bắt đầu trích xuất\" để bắt đầu quá trình",
+    "description": "Bước 3 trong hướng dẫn"
+  },
+  "helpStep4": {
+    "message": "Chờ quá trình trích xuất hoàn tất (có thể mất vài phút)",
+    "description": "Bước 4 trong hướng dẫn"
+  },
+  "helpSectionFeatures": {
+    "message": "Tính năng",
+    "description": "Tiêu đề phần tính năng trong hướng dẫn"
+  },
+  "helpFeature1": {
+    "message": "<strong>Xem lịch học:</strong> Xem và chỉnh sửa lịch học đã trích xuất",
+    "description": "Tính năng 1 trong hướng dẫn"
+  },
+  "helpFeature2": {
+    "message": "<strong>Xuất file .ics:</strong> Xuất lịch học ra file .ics để import vào Google Calendar, Outlook, hoặc các ứng dụng lịch khác",
+    "description": "Tính năng 2 trong hướng dẫn"
+  },
+  "helpFeature3": {
+    "message": "<strong>Chỉnh sửa:</strong> Chỉnh sửa thông tin lớp học, thêm link Google Meet, và cập nhật trạng thái",
+    "description": "Tính năng 3 trong hướng dẫn"
+  },
+  "helpSectionTips": {
+    "message": "Mẹo sử dụng",
+    "description": "Tiêu đề phần mẹo trong hướng dẫn"
+  },
+  "helpTip1": {
+    "message": "Khoảng thời gian tối đa là 1 năm (365 ngày)",
+    "description": "Mẹo 1 trong hướng dẫn"
+  },
+  "helpTip2": {
+    "message": "Bạn có thể trích xuất lịch học trong quá khứ hoặc tương lai",
+    "description": "Mẹo 2 trong hướng dẫn"
+  },
+  "helpTip3": {
+    "message": "Sau khi trích xuất, bạn có thể xem và chỉnh sửa lịch học trước khi xuất file",
+    "description": "Mẹo 3 trong hướng dẫn"
+  },
+  "helpTip4": {
+    "message": "File .ics có thể được import vào hầu hết các ứng dụng lịch phổ biến",
+    "description": "Mẹo 4 trong hướng dẫn"
+  },
+  "helpSectionTroubleshooting": {
+    "message": "Khắc phục sự cố",
+    "description": "Tiêu đề phần khắc phục sự cố trong hướng dẫn"
+  },
+  "helpTrouble1": {
+    "message": "<strong>Lỗi \"Bạn chưa đăng nhập\":</strong> Đảm bảo bạn đã đăng nhập vào FAP trong tab hiện tại",
+    "description": "Khắc phục sự cố 1 trong hướng dẫn"
+  },
+  "helpTrouble2": {
+    "message": "<strong>Trích xuất thất bại:</strong> Thử tăng \"Thời gian chờ\" trong cài đặt nâng cao",
+    "description": "Khắc phục sự cố 2 trong hướng dẫn"
+  },
+  "helpTrouble3": {
+    "message": "<strong>Không có dữ liệu:</strong> Kiểm tra lại khoảng thời gian đã chọn và đảm bảo có lịch học trong khoảng thời gian đó",
+    "description": "Khắc phục sự cố 3 trong hướng dẫn"
+  },
+  "helpTrouble4": {
+    "message": "<strong>Lỗi khác:</strong> Thử tải lại trang và thử lại. Nếu vấn đề vẫn tiếp tục, vui lòng gửi yêu cầu hỗ trợ",
+    "description": "Khắc phục sự cố 4 trong hướng dẫn"
+  },
+  "helpSectionSupport": {
+    "message": "Cần hỗ trợ thêm?",
+    "description": "Tiêu đề phần hỗ trợ trong hướng dẫn"
+  },
+  "helpSupportMessage": {
+    "message": "Nếu bạn gặp vấn đề hoặc có câu hỏi, vui lòng gửi yêu cầu hỗ trợ qua:",
+    "description": "Thông điệp hỗ trợ trong hướng dẫn"
+  },
+  "helpSupportGitHub": {
+    "message": "GitHub Issues",
+    "description": "Link GitHub Issues"
+  },
+  "helpSupportEmail": {
+    "message": "Email cá nhân",
+    "description": "Email hỗ trợ"
+  },
+  "footerMadeBy": {
+    "message": "Được tạo bởi BV. Dũng.",
+    "description": "Text trong footer về tác giả"
+  },
+  "footerHelpLink": {
+    "message": "Xem hướng dẫn",
+    "description": "Link xem hướng dẫn trong footer"
   }
 }
 

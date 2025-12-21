@@ -869,6 +869,12 @@ function initI18n() {
       }
     }
   });
+  
+  // Set footer "Made by" text
+  const footerMadeByText = document.getElementById('footerMadeByText');
+  if (footerMadeByText) {
+    footerMadeByText.textContent = getMessage('footerMadeBy');
+  }
 }
 
 // Event listeners
