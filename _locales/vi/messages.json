@@ -93,6 +93,20 @@
     "message": "Trích xuất thành công!",
     "description": "Thông báo thành công"
   },
+  "progressSuccessWithWeeks": {
+    "message": "Đã trích xuất $1/$2 tuần",
+    "description": "Thông báo thành công với số tuần",
+    "placeholders": {
+      "SUCCESS": {
+        "content": "$1",
+        "example": "15"
+      },
+      "TOTAL": {
+        "content": "$2",
+        "example": "15"
+      }
+    }
+  },
   "errorPrefix": {
     "message": "Lỗi:",
     "description": "Tiền tố thông báo lỗi"
@@ -150,6 +164,20 @@
   "overlayComplete": {
     "message": "Trích xuất hoàn tất!",
     "description": "Thông báo hoàn tất trong overlay"
+  },
+  "overlayCompleteWithWeeks": {
+    "message": "Đã trích xuất $1/$2 tuần",
+    "description": "Thông báo hoàn tất trong overlay với số tuần",
+    "placeholders": {
+      "SUCCESS": {
+        "content": "$1",
+        "example": "15"
+      },
+      "TOTAL": {
+        "content": "$2",
+        "example": "15"
+      }
+    }
   },
   "overlayDismiss": {
     "message": "Đóng",

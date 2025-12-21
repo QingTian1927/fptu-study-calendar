@@ -381,17 +381,28 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
     // Check if week overlaps with date range
     const overlaps = weekOverlapsRange(weekStartDate, weekEndDate, rangeStart, rangeEnd);
     
-    // Additional validation: ensure week dates are reasonable
-    // A week should not be included if it's clearly outside the range
-    // This is a defensive check to catch any parsing errors
+    // Additional validation: calculate distance from range to catch year parsing errors
+    // A week is "way outside" if it's more than 7 days (one week) away from the range
+    // This allows partial overlaps (e.g., week 06/01-12/01 with range 08/01-14/01) 
+    // but excludes weeks that are clearly unrelated (e.g., week 15/12-21/12 with range 01/01-04/30)
+    const daysBeforeRange = Math.ceil((rangeStart - weekEndDate) / (1000 * 60 * 60 * 24));
+    const daysAfterRange = Math.ceil((weekStartDate - rangeEnd) / (1000 * 60 * 60 * 24));
+    
     const weekStartISO = weekStartDate.toISOString().split('T')[0];
     const weekEndISO = weekEndDate.toISOString().split('T')[0];
     const rangeStartISO = rangeStart.toISOString().split('T')[0];
     const rangeEndISO = rangeEnd.toISOString().split('T')[0];
     
-    if (overlaps) {
-      // Log for debugging
-      console.log(`Including week "${option.text}" (${weekStartISO} to ${weekEndISO}) for range ${rangeStartISO} to ${rangeEndISO}`);
+    // Include week if it overlaps AND is not way outside the range
+    // This handles partial overlaps correctly while excluding weeks that are clearly unrelated
+    // Note: If overlaps is true, the week is by definition not "way outside", but we check
+    // the distance anyway to catch potential year parsing errors that might cause false overlaps
+    const isWayOutside = daysBeforeRange > 7 || daysAfterRange > 7;
+    
+    if (overlaps && !isWayOutside) {
+      // Week overlaps with range and is not way outside - include it
+      // This allows partial overlaps: if a week partially overlaps, include ALL classes from that week
+      console.log(`Including week "${option.text}" (${weekStartISO} to ${weekEndISO}) for range ${rangeStartISO} to ${rangeEndISO} - overlaps`);
       
       filtered.push({
         value: option.value,
@@ -402,12 +413,11 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
         endYear: weekEndYear
       });
     } else {
-      // Log excluded weeks for debugging (only if they're close to the range)
-      const daysBeforeRange = Math.floor((rangeStart - weekEndDate) / (1000 * 60 * 60 * 24));
-      const daysAfterRange = Math.floor((weekStartDate - rangeEnd) / (1000 * 60 * 60 * 24));
-      // Only log if within 30 days of range to avoid spam
-      if (daysBeforeRange <= 30 || daysAfterRange <= 30) {
-        console.log(`Excluding week "${option.text}" (${weekStartISO} to ${weekEndISO}) - ${daysBeforeRange <= 30 ? `${daysBeforeRange} days before range` : `${daysAfterRange} days after range`}`);
+      // Week does not overlap or is way outside - exclude it
+      if (isWayOutside) {
+        console.log(`Excluding week "${option.text}" (${weekStartISO} to ${weekEndISO}) - way outside range (${daysBeforeRange > 7 ? `${daysBeforeRange} days before` : `${daysAfterRange} days after`})`);
+      } else {
+        console.log(`Excluding week "${option.text}" (${weekStartISO} to ${weekEndISO}) - no overlap with range ${rangeStartISO} to ${rangeEndISO}`);
       }
     }
   }
@@ -1192,7 +1202,11 @@ async function startScraping(startDate, endDate, waitTime) {
     
     // Send completion message to content script to update overlay
     if (timetableTab) {
-      const completeText = chrome.i18n.getMessage('overlayComplete');
+      // Generate completion text with week count
+      const completeText = chrome.i18n.getMessage('overlayCompleteWithWeeks', [
+        allWeeksData.length.toString(),
+        weeksToScrape.length.toString()
+      ]);
       
       // Remove from active scraping tabs
       activeScrapingTabs.delete(timetableTab.id);

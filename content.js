@@ -654,7 +654,17 @@
         updateOverlayProgress(message.progressText);
         sendResponse({ success: true });
       } else if (message.action === 'scrapingComplete') {
-        completeOverlay(message.completeText);
+        // Use week count if available, otherwise use provided completeText
+        let completeText = message.completeText;
+        if (message.totalWeeks !== undefined && message.successCount !== undefined) {
+          // Use chrome.i18n.getMessage if available, otherwise construct message
+          if (typeof chrome !== 'undefined' && chrome.i18n && chrome.i18n.getMessage) {
+            completeText = chrome.i18n.getMessage('overlayCompleteWithWeeks', [message.successCount.toString(), message.totalWeeks.toString()]);
+          } else {
+            completeText = `Đã trích xuất ${message.successCount}/${message.totalWeeks} tuần`;
+          }
+        }
+        completeOverlay(completeText);
         sendResponse({ success: true });
       } else if (message.action === 'hideOverlay') {
         hideOverlay();

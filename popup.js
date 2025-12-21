@@ -467,9 +467,13 @@ async function initPopup() {
       progress.className = 'progress loading';
       progress.textContent = getMessage('progressScraping', [message.currentWeek, message.totalWeeks]);
     } else if (message.action === 'scrapingComplete') {
-      // Update progress to show completion
+      // Update progress to show completion with week count
       progress.className = 'progress success';
-      progress.textContent = getMessage('progressSuccess');
+      if (message.totalWeeks !== undefined && message.successCount !== undefined) {
+        progress.textContent = getMessage('progressSuccessWithWeeks', [message.successCount.toString(), message.totalWeeks.toString()]);
+      } else {
+        progress.textContent = getMessage('progressSuccess');
+      }
       
       // Enable preview and export buttons
       previewButton.disabled = false;
