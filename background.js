@@ -306,7 +306,14 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
   const rangeStart = new Date(startDate);
   const rangeEnd = new Date(endDate);
   
-  for (const option of weekOptions) {
+  // Normalize range dates to start of day for accurate comparison
+  rangeStart.setHours(0, 0, 0, 0);
+  rangeEnd.setHours(23, 59, 59, 999);
+  
+  for (let i = 0; i < weekOptions.length; i++) {
+    const option = weekOptions[i];
+    const isLastOption = i === weekOptions.length - 1;
+    
     // Parse week range from text like "12/01 To 18/01" or "30/12 To 05/01"
     const match = option.text.match(/(\d{2}\/\d{2})\s+To\s+(\d{2}\/\d{2})/);
     if (!match) continue;
@@ -319,49 +326,89 @@ function filterWeeksByRange(weekOptions, startDate, endDate, year) {
     const [endDay, endMonth] = weekEndStr.split('/').map(Number);
     
     // Determine year for week dates (handle year boundaries)
-    // IMPORTANT: When year dropdown shows 2026 and week is "30/12 To 05/01",
-    // it means Dec 30, 2025 to Jan 5, 2026 (the LAST week of 2025, shown at the start of 2026's dropdown)
-    // When year dropdown shows 2026 and week is "05/01 To 11/01",
-    // it means Jan 5, 2026 to Jan 11, 2026 (a week in 2026)
+    // IMPORTANT: The FIRST value in the dropdown spans the previous year to the current year.
+    // The LAST value in the dropdown remains entirely in the current year.
+    // Example when year dropdown shows 2025:
+    // - First week "30/12 To 05/01" = Dec 30, 2024 to Jan 5, 2025 (spans boundary, previous year to current year)
+    // - Last week "15/12 To 21/12" = Dec 15, 2025 to Dec 21, 2025 (entirely in current year, no boundary span)
     
     let weekStartYear = year;
     let weekEndYear = year;
     
     // If week spans year boundary (e.g., 30/12 To 05/01)
+    // This pattern typically appears as the FIRST option in the dropdown
     if (startMonth === 12 && endMonth === 1) {
       // Week starts in December of (year-1), ends in January of year
       // This is the last week of (year-1), shown at the start of year's dropdown
       weekStartYear = year - 1;
       weekEndYear = year;
-    } else if (startMonth > endMonth) {
-      // Week spans year boundary (e.g., November to January)
+    } else if (startMonth > endMonth && startMonth !== 12) {
+      // Week spans year boundary (e.g., November to January, but NOT December to January which is handled above)
+      // This case is rare but possible
       weekStartYear = year - 1;
       weekEndYear = year;
     } else {
-      // Week is within the same year (e.g., 05/01 To 11/01 in 2026 dropdown = Jan 2026)
+      // Week is within the same year
+      // For "15/12 To 21/12" in 2025 dropdown = Dec 15, 2025 to Dec 21, 2025
+      // This typically appears as the LAST option in the dropdown
       weekStartYear = year;
       weekEndYear = year;
+      
+      // Additional validation: if this is the last option and has December dates,
+      // ensure it's treated as the current year (not previous year)
+      if (isLastOption && startMonth === 12 && endMonth === 12) {
+        // Last option with December dates is definitely in the current year
+        weekStartYear = year;
+        weekEndYear = year;
+      }
     }
     
     const weekStartDate = parseDate(weekStartStr, weekStartYear);
     let weekEndDate = parseDate(weekEndStr, weekEndYear);
+    
+    // Normalize week dates to start/end of day for accurate comparison
+    weekStartDate.setHours(0, 0, 0, 0);
+    weekEndDate.setHours(23, 59, 59, 999);
     
     // Verify the dates make sense
     if (weekEndDate < weekStartDate) {
       // This shouldn't happen, but if it does, adjust
       weekEndYear = weekStartYear + 1;
       weekEndDate = parseDate(weekEndStr, weekEndYear);
+      weekEndDate.setHours(23, 59, 59, 999);
     }
     
-    if (weekOverlapsRange(weekStartDate, weekEndDate, rangeStart, rangeEnd)) {
+    // Check if week overlaps with date range
+    const overlaps = weekOverlapsRange(weekStartDate, weekEndDate, rangeStart, rangeEnd);
+    
+    // Additional validation: ensure week dates are reasonable
+    // A week should not be included if it's clearly outside the range
+    // This is a defensive check to catch any parsing errors
+    const weekStartISO = weekStartDate.toISOString().split('T')[0];
+    const weekEndISO = weekEndDate.toISOString().split('T')[0];
+    const rangeStartISO = rangeStart.toISOString().split('T')[0];
+    const rangeEndISO = rangeEnd.toISOString().split('T')[0];
+    
+    if (overlaps) {
+      // Log for debugging
+      console.log(`Including week "${option.text}" (${weekStartISO} to ${weekEndISO}) for range ${rangeStartISO} to ${rangeEndISO}`);
+      
       filtered.push({
         value: option.value,
         text: option.text,
-        startDate: weekStartDate.toISOString().split('T')[0],
-        endDate: weekEndDate.toISOString().split('T')[0],
+        startDate: weekStartISO,
+        endDate: weekEndISO,
         startYear: weekStartYear,
         endYear: weekEndYear
       });
+    } else {
+      // Log excluded weeks for debugging (only if they're close to the range)
+      const daysBeforeRange = Math.floor((rangeStart - weekEndDate) / (1000 * 60 * 60 * 24));
+      const daysAfterRange = Math.floor((weekStartDate - rangeEnd) / (1000 * 60 * 60 * 24));
+      // Only log if within 30 days of range to avoid spam
+      if (daysBeforeRange <= 30 || daysAfterRange <= 30) {
+        console.log(`Excluding week "${option.text}" (${weekStartISO} to ${weekEndISO}) - ${daysBeforeRange <= 30 ? `${daysBeforeRange} days before range` : `${daysAfterRange} days after range`}`);
+      }
     }
   }
   
