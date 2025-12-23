@@ -510,6 +510,14 @@
   "confirmClearCalendarData": {
     "message": "Bạn có chắc chắn muốn xóa tất cả dữ liệu lịch học?\n\nHành động này không thể hoàn tác.",
     "description": "Xác nhận xóa tất cả dữ liệu lịch học"
+  },
+  "buyMeACoffee": {
+    "message": "Mua giúp tôi một cốc cà phê",
+    "description": "Nút quyên góp Buy Me a Coffee"
+  },
+  "donationAppreciated": {
+    "message": "Nếu extension này có giúp ích cho bạn, một cốc cà phê ủng hộ từ bạn sẽ là động lực rất lớn đối với mình ☕️",
+    "description": "Văn bản giới thiệu cho nút quyên góp"
   }
 }
 

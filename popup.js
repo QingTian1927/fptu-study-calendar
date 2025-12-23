@@ -157,6 +157,12 @@ async function initPopup() {
   document.getElementById('aboutHelpLabel').textContent = getMessage('aboutHelpLabel');
   // GitHub link is set in HTML, no need to set textContent
   document.getElementById('themeLabel').textContent = getMessage('themeLabel');
+  
+  // Initialize donation text if element exists
+  const donationText = document.querySelector('.donation-text');
+  if (donationText) {
+    donationText.textContent = getMessage('donationAppreciated');
+  }
   document.getElementById('themeSystemOption').textContent = getMessage('themeSystem');
   document.getElementById('themeLightOption').textContent = getMessage('themeLight');
   document.getElementById('themeDarkOption').textContent = getMessage('themeDark');
