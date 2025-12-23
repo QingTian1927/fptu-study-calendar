@@ -1,5 +1,17 @@
 # FPTU Study Calendar
 
+<p align="left">
+  <a href="https://chromewebstore.google.com/detail/fptu-study-calendar/hflohnkdglheggdcafogjddkgjlgmddn" target="_blank">
+    <img src="https://img.shields.io/badge/Chrome_Web_Store-Available-4285F4?logo=google-chrome&logoColor=white" alt="Chrome Web Store"/>
+  </a>
+
+  <a href="https://github.com/QingTian1927/fptu-study-calendar/releases/latest" target="_blank">
+    <img src="https://img.shields.io/github/v/release/QingTian1927/fptu-study-calendar?display_name=tag&sort=semver" alt="Latest Release"/>
+  </a>
+
+  <img src="https://img.shields.io/badge/License-GPLv3-orange" alt="License GPLv3"/>
+</p>
+
 A Chrome extension that helps FPT University students export their class schedules from FAP to Google Calendar, Apple Calendar, and other calendar applications.
 
 ![FPTU Study Calendar Banner](./assets/readme_banner.png)
@@ -18,7 +30,7 @@ A Chrome extension that helps FPT University students export their class schedul
 
 ### Method 1: Chrome Web Store (Recommended)
 
-*Coming soon - The extension will be available on the Chrome Web Store*
+* [Google Chrome Web Store](https://chromewebstore.google.com/detail/fptu-study-calendar/hflohnkdglheggdcafogjddkgjlgmddn)
 
 ### Method 2: Manual Installation (Developer Mode)
 
