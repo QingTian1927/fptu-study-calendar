@@ -127,6 +127,22 @@
     "message": "Ngày bắt đầu phải trước ngày kết thúc",
     "description": "Lỗi thứ tự ngày"
   },
+  "errorWaitTimeRequired": {
+    "message": "Vui lòng nhập thời gian chờ",
+    "description": "Lỗi thiếu thời gian chờ"
+  },
+  "errorWaitTimeMin": {
+    "message": "Thời gian chờ phải ít nhất 1000 ms",
+    "description": "Lỗi thời gian chờ quá nhỏ"
+  },
+  "errorWaitTimeMax": {
+    "message": "Thời gian chờ không được vượt quá 10000 ms",
+    "description": "Lỗi thời gian chờ quá lớn"
+  },
+  "errorWaitTimeInvalid": {
+    "message": "Vui lòng sửa thời gian chờ trước khi tiếp tục",
+    "description": "Lỗi thời gian chờ không hợp lệ khi đóng cài đặt"
+  },
   "confirmReplaceData": {
     "message": "Đã có dữ liệu lớp học được lưu trữ.\\n\\nNhấn OK để thay thế tất cả dữ liệu cũ.\\nNhấn Cancel để hợp nhất với dữ liệu hiện có.",
     "description": "Xác nhận thay thế dữ liệu"

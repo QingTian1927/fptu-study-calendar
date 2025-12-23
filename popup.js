@@ -237,14 +237,27 @@ async function initPopup() {
     settingsOverlay.classList.add('active');
   });
   
-  overlayClose.addEventListener('click', () => {
+  // Function to close settings overlay (with validation)
+  function closeSettingsOverlay() {
+    // Validate wait time before closing
+    if (!isWaitTimeValid()) {
+      // Show error and prevent closing
+      validateWaitTime(waitTimeInput.value, true);
+      alert(getMessage('errorWaitTimeInvalid'));
+      return false;
+    }
     settingsOverlay.classList.remove('active');
+    return true;
+  }
+  
+  overlayClose.addEventListener('click', () => {
+    closeSettingsOverlay();
   });
   
   // Close overlay when clicking outside
   settingsOverlay.addEventListener('click', (e) => {
     if (e.target === settingsOverlay) {
-      settingsOverlay.classList.remove('active');
+      closeSettingsOverlay();
     }
   });
   
@@ -254,7 +267,7 @@ async function initPopup() {
       if (helpOverlay.classList.contains('active')) {
         helpOverlay.classList.remove('active');
       } else if (settingsOverlay.classList.contains('active')) {
-        settingsOverlay.classList.remove('active');
+        closeSettingsOverlay();
       }
     }
   });
@@ -278,7 +291,17 @@ async function initPopup() {
 
   // Load saved settings
   const result = await chrome.storage.local.get(['waitTime', 'startDate', 'endDate']);
-  const waitTime = result.waitTime || WAIT_TIMES.DEFAULT_WAIT_TIME;
+  let waitTime = result.waitTime || WAIT_TIMES.DEFAULT_WAIT_TIME;
+  
+  // Validate and clamp saved wait time if invalid
+  if (waitTime < 1000) {
+    waitTime = 1000;
+    chrome.storage.local.set({ waitTime: 1000 });
+  } else if (waitTime > 10000) {
+    waitTime = 10000;
+    chrome.storage.local.set({ waitTime: 10000 });
+  }
+  
   document.getElementById('waitTime').value = waitTime;
 
   // Load saved dates or use defaults
@@ -328,11 +351,78 @@ async function initPopup() {
     });
   });
 
-  // Save wait time when changed
-  document.getElementById('waitTime').addEventListener('change', (e) => {
-    const value = parseInt(e.target.value, 10);
-    if (value >= 1000) {
-      chrome.storage.local.set({ waitTime: value });
+  // Wait time validation and save
+  const waitTimeInput = document.getElementById('waitTime');
+  const waitTimeError = document.getElementById('waitTimeError');
+  
+  // Validation function - accessible globally for overlay close and scrape checks
+  function validateWaitTime(value, showError = true) {
+    const numValue = parseInt(value, 10);
+    
+    // Clear previous error
+    if (showError) {
+      waitTimeInput.classList.remove('invalid');
+      waitTimeError.style.display = 'none';
+      waitTimeError.textContent = '';
+    }
+    
+    // Check if empty
+    if (value === '' || isNaN(numValue)) {
+      if (showError) {
+        waitTimeInput.classList.add('invalid');
+        waitTimeError.textContent = getMessage('errorWaitTimeRequired');
+        waitTimeError.style.display = 'block';
+      }
+      return false;
+    }
+    
+    // Check if below minimum
+    if (numValue < 1000) {
+      if (showError) {
+        waitTimeInput.classList.add('invalid');
+        waitTimeError.textContent = getMessage('errorWaitTimeMin');
+        waitTimeError.style.display = 'block';
+      }
+      return false;
+    }
+    
+    // Check if above maximum
+    if (numValue > 10000) {
+      if (showError) {
+        waitTimeInput.classList.add('invalid');
+        waitTimeError.textContent = getMessage('errorWaitTimeMax');
+        waitTimeError.style.display = 'block';
+      }
+      return false;
+    }
+    
+    return true;
+  }
+  
+  // Function to check if wait time is valid (for overlay close and scrape validation)
+  function isWaitTimeValid() {
+    const value = waitTimeInput.value;
+    return validateWaitTime(value, false);
+  }
+  
+  // Validate on input (real-time feedback)
+  waitTimeInput.addEventListener('input', (e) => {
+    const value = e.target.value;
+    if (value !== '') {
+      validateWaitTime(value);
+    } else {
+      // Clear error when field is empty (user is typing)
+      waitTimeInput.classList.remove('invalid');
+      waitTimeError.style.display = 'none';
+    }
+  });
+  
+  // Validate and save on change
+  waitTimeInput.addEventListener('change', (e) => {
+    const value = e.target.value;
+    if (validateWaitTime(value)) {
+      const numValue = parseInt(value, 10);
+      chrome.storage.local.set({ waitTime: numValue });
     }
   });
 
@@ -344,6 +434,15 @@ async function initPopup() {
 
   // Scrape button handler
   scrapeButton.addEventListener('click', async () => {
+    // Validate wait time before scraping
+    if (!isWaitTimeValid()) {
+      // Open settings overlay to show the error
+      settingsOverlay.classList.add('active');
+      validateWaitTime(waitTimeInput.value, true);
+      alert(getMessage('errorWaitTimeInvalid'));
+      return;
+    }
+    
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const waitTime = parseInt(document.getElementById('waitTime').value, 10);
