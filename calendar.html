@@ -308,6 +308,75 @@
       border-color: #dc2626;
     }
 
+    .btn.btn-clear-data {
+      background: var(--color-surface) !important;
+      color: #f43f5e !important;
+      border: var(--border-width) solid #f43f5e !important;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--border-radius-md);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+      white-space: nowrap;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn.btn-clear-data:hover:not(:disabled) {
+      background: #fef2f2 !important;
+      border-color: #dc2626 !important;
+      color: #dc2626 !important;
+    }
+
+    .btn.btn-clear-data:active:not(:disabled) {
+      background: #fee2e2 !important;
+      border-color: #b91c1c !important;
+      color: #b91c1c !important;
+    }
+
+    [data-theme="dark"] .btn.btn-clear-data {
+      background: var(--color-surface) !important;
+      color: #fda4af !important;
+      border-color: #f43f5e !important;
+    }
+
+    [data-theme="dark"] .btn.btn-clear-data:hover:not(:disabled) {
+      background: rgba(244, 63, 94, 0.15) !important;
+      border-color: #f87171 !important;
+      color: #f87171 !important;
+    }
+
+    [data-theme="dark"] .btn.btn-clear-data:active:not(:disabled) {
+      background: rgba(244, 63, 94, 0.25) !important;
+      border-color: #f43f5e !important;
+      color: #fda4af !important;
+    }
+
+    .btn.btn-clear-data:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.btn-clear-data svg {
+      flex-shrink: 0;
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      fill: currentColor !important;
+      color: inherit;
+      pointer-events: none;
+      vertical-align: middle;
+    }
+    
+    .btn.btn-clear-data span {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
     /* ========================================
        PILL SWITCHER
        ======================================== */
@@ -406,6 +475,12 @@
       font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
       line-height: var(--line-height-tight);
+    }
+
+    .week-selector-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
     }
 
     .week-selector {
@@ -1179,6 +1254,11 @@
         align-items: stretch;
       }
 
+      .week-selector-group {
+        width: 100%;
+        flex-direction: column;
+      }
+
       .week-selector {
         width: 100%;
       }
@@ -1211,6 +1291,14 @@
         <div class="header-subtitle" id="headerSubtitle">Chọn tuần để xem lịch học</div>
       </div>
     </div>
+    <div class="header-actions">
+      <button id="clearDataBtn" class="btn btn-clear-data" title="Xóa tất cả dữ liệu lịch học">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+          <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+        </svg>
+        <span id="clearDataBtnText">Xóa lịch học</span>
+      </button>
+    </div>
     <div class="view-controls">
       <div class="pill-switcher">
         <button id="weekViewBtn" class="pill-switcher-btn active">
@@ -1239,7 +1327,15 @@
         </svg>
         <span data-i18n="prevWeek">Tuần trước</span>
       </button>
-      <select id="weekSelector" class="week-selector"></select>
+      <div class="week-selector-group">
+        <select id="weekSelector" class="week-selector"></select>
+        <button id="todayBtn" class="btn btn-outline" title="Chuyển đến tuần hiện tại">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-heart-fill" viewBox="0 0 16 16">
+            <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8 7.993c1.664-1.711 5.825 1.283 0 5.132-5.825-3.85-1.664-6.843 0-5.132"/>
+          </svg>
+          <span data-i18n="today">Hôm nay</span>
+        </button>
+      </div>
       <button id="nextWeekBtn" class="btn btn-outline">
         <span data-i18n="nextWeek">Tuần sau</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16">

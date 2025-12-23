@@ -173,6 +173,14 @@ function getClassColor(subjectCode, isOnline) {
   return palette[index];
 }
 
+// Update export button state based on data availability
+function updateExportButtonState() {
+  const exportBtn = document.getElementById('exportBtn');
+  if (exportBtn) {
+    exportBtn.disabled = allClasses.length === 0;
+  }
+}
+
 // Load classes from storage
 async function loadClasses() {
   try {
@@ -181,11 +189,15 @@ async function loadClasses() {
       allClasses = result.scrapedClasses;
       renderCalendar();
     } else {
+      allClasses = [];
       showEmptyState();
     }
+    updateExportButtonState();
   } catch (error) {
     console.error('Error loading classes:', error);
+    allClasses = [];
     showEmptyState();
+    updateExportButtonState();
   }
 }
 
@@ -227,30 +239,12 @@ function getClassesForWeek(weekStart) {
   const weekEndNormalized = new Date(weekEnd);
   weekEndNormalized.setHours(23, 59, 59, 999);
   
-  // Build a set of day/month combinations for this week (to handle year mismatches)
-  const weekDayMonths = new Set();
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(weekStartNormalized);
-    day.setDate(day.getDate() + i);
-    const dayMonth = `${day.getMonth()}-${day.getDate()}`;
-    weekDayMonths.add(dayMonth);
-  }
-  
   return allClasses.filter(cls => {
     const classDate = new Date(cls.date + 'T00:00:00');
+    classDate.setHours(0, 0, 0, 0);
     
-    // First try exact date match
-    if (classDate >= weekStartNormalized && classDate <= weekEndNormalized) {
-      return true;
-    }
-    
-    // If no match, try matching by day/month (in case of year mismatch)
-    const classDayMonth = `${classDate.getMonth()}-${classDate.getDate()}`;
-    if (weekDayMonths.has(classDayMonth)) {
-      return true;
-    }
-    
-    return false;
+    // Only include classes that fall within the exact week date range (including year)
+    return classDate >= weekStartNormalized && classDate <= weekEndNormalized;
   });
 }
 
@@ -418,19 +412,21 @@ function renderWeekView() {
   // Add class blocks - place them in the correct slot cell
   weekClasses.forEach(cls => {
     const classDate = new Date(cls.date + 'T00:00:00');
+    classDate.setHours(0, 0, 0, 0);
     const weekStartDate = new Date(currentWeekStart);
     weekStartDate.setHours(0, 0, 0, 0);
     
-    // Calculate day index - handle year mismatches by matching day/month
+    // Calculate day index - use exact date matching (including year)
     let dayIndex = -1;
-    const classDay = classDate.getDate();
-    const classMonth = classDate.getMonth();
     
-    // Find which day of the week this class belongs to
+    // Find which day of the week this class belongs to by comparing full dates
     for (let i = 0; i < 7; i++) {
       const weekDay = new Date(weekStartDate);
       weekDay.setDate(weekDay.getDate() + i);
-      if (weekDay.getDate() === classDay && weekDay.getMonth() === classMonth) {
+      weekDay.setHours(0, 0, 0, 0);
+      
+      // Compare full dates (year, month, day) to ensure correct placement
+      if (weekDay.getTime() === classDate.getTime()) {
         dayIndex = i;
         break;
       }
@@ -772,11 +768,14 @@ function renderCalendar() {
   }
 }
 
-// Show empty state
+// Show empty state - render empty calendar instead of just a message
 function showEmptyState() {
-  const emptyMessage = getMessage('emptyState');
-  document.getElementById('weekGrid').innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
-  document.getElementById('listContent').innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
+  // Set current week to today if not set
+  if (!currentWeekStart) {
+    currentWeekStart = getWeekStart(new Date());
+  }
+  // Render calendar (which will show empty grid)
+  renderCalendar();
 }
 
 // Open edit modal
@@ -841,6 +840,7 @@ async function deleteClass() {
   if (confirm(getMessage('confirmDeleteClass'))) {
     allClasses = allClasses.filter(c => c.activityId !== currentEditingClass.activityId);
     await saveClasses();
+    updateExportButtonState();
     renderCalendar();
     closeEditModal();
   }
@@ -915,6 +915,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadTheme();
   
+  // Initialize i18n for clear data button
+  const clearDataBtn = document.getElementById('clearDataBtn');
+  const clearDataBtnText = document.getElementById('clearDataBtnText');
+  if (clearDataBtnText) {
+    clearDataBtnText.textContent = getMessage('clearCalendarData');
+  }
+  // Set title attribute
+  if (clearDataBtn) {
+    clearDataBtn.title = getMessage('clearCalendarData');
+  }
+  
+  // Initialize i18n for today button
+  const todayBtn = document.getElementById('todayBtn');
+  if (todayBtn) {
+    todayBtn.title = getMessage('today');
+  }
+  
+  // Initialize export button state (will be updated after loadClasses)
+  updateExportButtonState();
+  
   loadClasses();
 
   // View toggle
@@ -967,6 +987,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('weekSelector').addEventListener('change', (e) => {
     currentWeekStart = new Date(e.target.value);
     renderWeekView();
+  });
+
+  // Today button - navigate to current week
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    const today = new Date();
+    currentWeekStart = getWeekStart(today);
+    renderWeekView();
+    updateWeekSelector();
   });
 
   // Update week selector to reflect current week
@@ -1034,6 +1062,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('Export error:', error);
       alert(`Lỗi xuất file: ${error.message}`);
+    }
+  });
+
+  // Clear data button handler
+  document.getElementById('clearDataBtn').addEventListener('click', async () => {
+    // Show confirmation dialog with localized message
+    const confirmed = confirm(getMessage('confirmClearCalendarData'));
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    try {
+      // Clear data from storage
+      await chrome.storage.local.remove(['scrapedClasses']);
+      
+      // Clear local state
+      allClasses = [];
+      currentWeekStart = null;
+      
+      // Show empty state
+      showEmptyState();
+      
+      // Update export button state
+      updateExportButtonState();
+      
+      console.log('All calendar data cleared');
+    } catch (error) {
+      console.error('Error clearing calendar data:', error);
+      alert(`Lỗi xóa dữ liệu: ${error.message}`);
     }
   });
 

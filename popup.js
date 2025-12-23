@@ -60,6 +60,38 @@ function validateDateRange(startDate, endDate) {
   return { valid: true };
 }
 
+// Show merge/replace dialog and return user choice
+function showMergeReplaceDialog() {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('mergeReplaceOverlay');
+    const mergeButton = document.getElementById('mergeButton');
+    const replaceButton = document.getElementById('replaceButton');
+    const cancelButton = document.getElementById('cancelMergeReplaceButton');
+    const closeButton = document.getElementById('mergeReplaceOverlayClose');
+    
+    // Show overlay
+    overlay.classList.add('active');
+    
+    // Handle button clicks
+    const handleChoice = (choice) => {
+      overlay.classList.remove('active');
+      resolve(choice);
+    };
+    
+    mergeButton.addEventListener('click', () => handleChoice('merge'), { once: true });
+    replaceButton.addEventListener('click', () => handleChoice('replace'), { once: true });
+    cancelButton.addEventListener('click', () => handleChoice(null), { once: true });
+    closeButton.addEventListener('click', () => handleChoice(null), { once: true });
+    
+    // Close on overlay background click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        handleChoice(null);
+      }
+    }, { once: true });
+  });
+}
+
 // Theme management
 function getSystemTheme() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -317,21 +349,19 @@ async function initPopup() {
       return;
     }
 
-    // Check for existing data and show confirmation only if data exists
+    // Check for existing data and show merge/replace dialog if data exists
     const existing = await chrome.storage.local.get(['scrapedClasses']);
+    let mergeMode = false;
     
     if (existing.scrapedClasses && existing.scrapedClasses.length > 0) {
-      // Only show confirmation if there's existing data that will be replaced
-      const userConfirmed = confirm(
-        'Đã có dữ liệu lớp học được lưu trữ.\n\n' +
-        'Dữ liệu cũ sẽ bị thay thế hoàn toàn bởi dữ liệu mới.\n\n' +
-        'Bạn có chắc chắn muốn tiếp tục?'
-      );
-      if (!userConfirmed) {
+      // Show merge/replace dialog
+      const userChoice = await showMergeReplaceDialog();
+      if (userChoice === null) {
         return; // User cancelled
       }
+      mergeMode = userChoice === 'merge';
     }
-    // If no existing data, proceed directly without confirmation
+    // If no existing data, proceed directly (mergeMode stays false)
 
     // Disable button and show progress
     scrapeButton.disabled = true;
@@ -352,7 +382,8 @@ async function initPopup() {
           action: 'startScraping',
           startDate,
           endDate,
-          waitTime
+          waitTime,
+          mergeMode: mergeMode
         }, (response) => {
           clearTimeout(timeout);
           
@@ -382,9 +413,9 @@ async function initPopup() {
           console.log('Các tuần không thể trích xuất:', response.errors);
         }
         
-        // Enable export and preview buttons
+        // Enable export button
         exportButton.disabled = false;
-        previewButton.disabled = false;
+        // Preview button is always enabled
         
         // Reset progress after 5 seconds
         setTimeout(() => {
@@ -451,15 +482,17 @@ async function initPopup() {
     }
   });
 
-  // Check if there's existing scraped data to enable preview/export buttons
+  // Check if there's existing scraped data to enable export button
   async function checkExistingData() {
     const result = await chrome.storage.local.get(['scrapedClasses']);
     if (result.scrapedClasses && result.scrapedClasses.length > 0) {
-      previewButton.disabled = false;
       document.getElementById('exportButton').disabled = false;
     }
   }
   checkExistingData();
+  
+  // Preview button is always enabled (no need to check for data)
+  previewButton.disabled = false;
 
   // Listen for progress updates from background
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -475,9 +508,9 @@ async function initPopup() {
         progress.textContent = getMessage('progressSuccess');
       }
       
-      // Enable preview and export buttons
-      previewButton.disabled = false;
+      // Enable export button
       exportButton.disabled = false;
+      // Preview button is always enabled
       
       // Reset progress after 5 seconds
       setTimeout(() => {

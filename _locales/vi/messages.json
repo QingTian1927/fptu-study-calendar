@@ -215,6 +215,10 @@
     "message": "Tuần sau",
     "description": "Nút chuyển sang tuần sau"
   },
+  "today": {
+    "message": "Hôm nay",
+    "description": "Nút chuyển đến tuần hiện tại"
+  },
   "sidebarOverview": {
     "message": "Tổng quan",
     "description": "Tiêu đề phần tổng quan trong sidebar"
@@ -498,6 +502,14 @@
   "footerHelpLink": {
     "message": "Xem hướng dẫn",
     "description": "Link xem hướng dẫn trong footer"
+  },
+  "clearCalendarData": {
+    "message": "Xóa lịch học",
+    "description": "Nút xóa tất cả dữ liệu lịch học"
+  },
+  "confirmClearCalendarData": {
+    "message": "Bạn có chắc chắn muốn xóa tất cả dữ liệu lịch học?\n\nHành động này không thể hoàn tác.",
+    "description": "Xác nhận xóa tất cả dữ liệu lịch học"
   }
 }
 

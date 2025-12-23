@@ -1307,41 +1307,99 @@ function flattenWeeksToClasses(weeksData) {
   return classes;
 }
 
-// Save scraped classes to storage (always replaces existing data)
-async function saveScrapedClasses(weeksData) {
+// Check if two classes conflict (same activityId, subjectCode, date + time)
+function classesConflict(class1, class2) {
+  // Conflict if: same activityId, subjectCode, date, and time
+  return class1.activityId === class2.activityId &&
+         class1.subjectCode === class2.subjectCode &&
+         class1.date === class2.date &&
+         class1.time.start === class2.time.start &&
+         class1.time.end === class2.time.end;
+}
+
+// Merge two classes, preferring newer property values
+function mergeClasses(existingClass, newClass) {
+  // Create merged class starting with existing
+  const merged = { ...existingClass };
+  
+  // Overwrite with new class properties (prefer newer values)
+  Object.keys(newClass).forEach(key => {
+    if (key === 'time' && newClass.time) {
+      // Merge time object
+      merged.time = {
+        start: newClass.time.start || merged.time.start,
+        end: newClass.time.end || merged.time.end
+      };
+    } else {
+      merged[key] = newClass[key] !== undefined ? newClass[key] : merged[key];
+    }
+  });
+  
+  return merged;
+}
+
+// Merge new classes with existing classes
+function mergeClassesData(existingClasses, newClasses) {
+  const merged = [...existingClasses];
+  const conflictIndices = new Map(); // Map to track which existing classes have conflicts
+  
+  // First pass: identify conflicts and merge them
+  newClasses.forEach(newClass => {
+    let foundConflict = false;
+    
+    for (let i = 0; i < merged.length; i++) {
+      if (classesConflict(merged[i], newClass)) {
+        // Merge the conflicting class
+        merged[i] = mergeClasses(merged[i], newClass);
+        conflictIndices.set(i, true);
+        foundConflict = true;
+        break;
+      }
+    }
+    
+    // If no conflict found, add as new class
+    if (!foundConflict) {
+      merged.push(newClass);
+    }
+  });
+  
+  return merged;
+}
+
+// Save scraped classes to storage (merge or replace based on mode)
+async function saveScrapedClasses(weeksData, mergeMode = false) {
   try {
     const newClasses = flattenWeeksToClasses(weeksData);
     
-    // Always replace existing data with new data
-    await chrome.storage.local.set({ scrapedClasses: newClasses });
-    console.log(`Saved ${newClasses.length} classes to storage (replaced existing data)`);
+    if (mergeMode) {
+      // Merge mode: get existing classes and merge
+      const existing = await chrome.storage.local.get(['scrapedClasses']);
+      const existingClasses = existing.scrapedClasses || [];
+      
+      const mergedClasses = mergeClassesData(existingClasses, newClasses);
+      await chrome.storage.local.set({ scrapedClasses: mergedClasses });
+      console.log(`Merged ${newClasses.length} new classes with ${existingClasses.length} existing classes. Total: ${mergedClasses.length} classes`);
+    } else {
+      // Replace mode: always replace existing data with new data
+      await chrome.storage.local.set({ scrapedClasses: newClasses });
+      console.log(`Saved ${newClasses.length} classes to storage (replaced existing data)`);
+    }
   } catch (error) {
     console.error('Error saving scraped classes:', error);
   }
 }
 
-// Clear scraped data and date inputs on browser startup
+// Reset first run flag on browser startup (service worker may have been terminated)
 chrome.runtime.onStartup.addListener(async () => {
-  chrome.storage.local.remove(['scrapedClasses', 'startDate', 'endDate']);
-  // Reset first run flag on browser startup (service worker may have been terminated)
   await resetFirstRunFlag();
-  console.log('Cleared scraped classes and date inputs on browser startup, reset first run flag');
+  console.log('Reset first run flag on browser startup');
 });
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   // Reset first run flag on install or update
   await resetFirstRunFlag();
   console.log('Reset first run flag on install/update');
-  
-  // Only clear on first install, not on updates
-  if (details.reason === 'install') {
-    chrome.storage.local.get(['scrapedClasses'], (result) => {
-      if (!result.scrapedClasses) {
-        chrome.storage.local.remove(['scrapedClasses']);
-        console.log('Cleared scraped classes on first install');
-      }
-    });
-  }
+  // Note: Data is now persisted across sessions and updates
 });
 
 // Message listener
@@ -1387,8 +1445,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (result.success && result.data) {
           console.log('Scraped data (JSON):', JSON.stringify(result.data, null, 2));
           
-          // Save scraped classes to storage (always replaces existing data)
-          await saveScrapedClasses(result.data);
+          // Save scraped classes to storage (merge or replace based on user choice)
+          const mergeMode = message.mergeMode === true; // Default to false if not provided
+          await saveScrapedClasses(result.data, mergeMode);
         }
         if (result.errors && result.errors.length > 0) {
           console.log('Failed weeks:', result.errors);
