@@ -24,10 +24,16 @@
     return match ? parseInt(match[1], 10) : null;
   }
 
-  // Parse date from DD/MM format
+  // Parse date from DD/MM format and return as YYYY-MM-DD string
+  // This avoids timezone issues with Date objects
   function parseDate(dateStr, year) {
     const [day, month] = dateStr.split('/').map(Number);
-    return new Date(year, month - 1, day);
+    const dayStr = String(day).padStart(2, '0');
+    const monthStr = String(month).padStart(2, '0');
+    return {
+      date: `${year}-${monthStr}-${dayStr}`,
+      dateObj: new Date(year, month - 1, day)
+    };
   }
 
   // Extract class information from a cell
@@ -131,7 +137,7 @@
       const time = parseTime(timeStr);
       
       if (!time) {
-        console.warn('Could not parse time for class:', subjectCode);
+        console.warn(`[DEBUG] Could not parse time for class ${subjectCode}: timeStr="${timeStr}" from container text: "${container.textContent.substring(0, 150)}"`);
         return null;
       }
       
@@ -160,22 +166,14 @@
       }
       
       // Check if online - look for online-indicator in the cell (parent of container)
-      // or if there's a meet URL, or if location contains "Meet URL"
       const cell = container.closest('td');
       const hasOnlineIndicator = cell ? cell.querySelector('.online-indicator') !== null : false;
-      const hasMeetUrl = meetUrl !== null;
-      const locationHasMeetUrl = location.toLowerCase().includes('meet url');
-      const isOnline = hasOnlineIndicator || hasMeetUrl || locationHasMeetUrl;
-      
-      // For online classes without a meet URL, explicitly set meetUrl to null
-      if (isOnline && !hasMeetUrl) {
-        meetUrl = null;
-      }
+      const isOnline = hasOnlineIndicator;
       
       // Get date for this day
       const dateStr = dates[dayIndex];
       if (!dateStr) {
-        console.warn(`No date string for day index ${dayIndex}`);
+        console.warn(`[DEBUG] No date string for day index ${dayIndex} in dates array of length ${dates.length}`);
         return null;
       }
       
@@ -192,7 +190,9 @@
         dateYear = baseYear;
       }
       
-      const date = parseDate(dateStr, dateYear);
+      const parsedDate = parseDate(dateStr, dateYear);
+      const date = parsedDate.dateObj;
+      const dateString = parsedDate.date;
       
       // Get day name
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -201,7 +201,7 @@
       return {
         subjectCode,
         day: dayName,
-        date: date.toISOString().split('T')[0],
+        date: dateString,
         slot: slotNumber,
         time: {
           start: time.start,
@@ -316,8 +316,46 @@
       const dates = dateHeaders.slice(1).map(th => th.textContent.trim());
       
       if (dates.length !== 7) {
-        console.warn('Expected 7 date headers, found:', dates.length, 'Proceeding with available dates');
-        // Continue with what we have instead of returning null
+        console.warn(`Expected 7 date headers, found: ${dates.length}. Attempting to reconstruct missing dates`);
+        
+        // If we have fewer dates than expected, reconstruct the full week
+        if (dates.length > 0 && dates.length < 7) {
+          // Parse the first available date
+          const firstDateStr = dates[0];
+          const [firstDay, firstMonth] = firstDateStr.split('/').map(Number);
+          const firstDate = new Date(selectedYear, firstMonth - 1, firstDay);
+          
+          // Get which day of week the first date is (0=Sun, 1=Mon, ..., 6=Sat)
+          const firstDayOfWeek = firstDate.getDay();
+          
+          // If the first date is not Monday, we're missing days at the start
+          // FPTU weeks start on Monday (1)
+          if (firstDayOfWeek !== 1) {
+            // Go back to Monday of the same week
+            // If Mon=1, Tue=2, ..., Sun=0, then days back to Monday is (firstDayOfWeek + 6) % 7
+            const daysBackToMonday = (firstDayOfWeek + 6) % 7;
+            
+            firstDate.setDate(firstDate.getDate() - daysBackToMonday);
+            
+            // Now generate all 7 dates for the week, starting from Monday
+            const reconstructedDates = [];
+            const currentDate = new Date(firstDate);
+            
+            for (let i = 0; i < 7; i++) {
+              const d = currentDate.getDate();
+              const m = currentDate.getMonth() + 1;
+              const dateStr = String(d).padStart(2, '0') + '/' + String(m).padStart(2, '0');
+              reconstructedDates.push(dateStr);
+              
+              // Move to next day
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // Replace dates array with reconstructed dates
+            dates.length = 0;
+            dates.push(...reconstructedDates);
+          }
+        }
       }
       
       console.log('Date headers:', dates);
@@ -354,8 +392,8 @@
         }
         
         // Process each day column (skip first column which is slot number)
-        // Handle cases where there might be fewer than 7 day columns
-        const dayColumns = Math.min(7, cells.length - 1);
+        // Handle cases where there might be fewer date headers than day columns
+        const dayColumns = Math.min(dates.length, cells.length - 1);
         for (let dayIndex = 0; dayIndex < dayColumns; dayIndex++) {
           const cell = cells[dayIndex + 1];
           if (!cell) continue;
@@ -371,6 +409,9 @@
           if (cellClasses && cellClasses.length > 0) {
             classes.push(...cellClasses);
             console.log(`Row ${rowIndex}, Slot ${slotNumber}, Day ${dayIndex}: Successfully extracted ${cellClasses.length} class(es)`);
+          } else if (links.length > 0) {
+            // Log when we have links but didn't extract anything
+            console.warn(`Row ${rowIndex}, Slot ${slotNumber}, Day ${dayIndex}: Found ${links.length} link(s) but extraction returned empty. Date: ${dates[dayIndex]}`);
           }
         }
       });

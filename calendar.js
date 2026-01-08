@@ -510,7 +510,7 @@ function createClassBlock(cls) {
   if (cls.materialsUrl) {
     linksHtml += `<a href="${cls.materialsUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📄 ${getMessage('classMaterials')}</a>`;
   }
-  if (cls.isOnline && cls.meetUrl) {
+  if (cls.meetUrl) {
     if (linksHtml) linksHtml += ' ';
     linksHtml += `<a href="${cls.meetUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">🔗 Meet</a>`;
   }
@@ -663,7 +663,7 @@ function renderListView() {
       if (cls.materialsUrl) {
         linksHtml += `<a href="${cls.materialsUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">📄 ${getMessage('classMaterials')}</a>`;
       }
-      if (cls.isOnline && cls.meetUrl) {
+      if (cls.meetUrl) {
         if (linksHtml) linksHtml += ' ';
         linksHtml += `<a href="${cls.meetUrl}" target="_blank" class="class-link" onclick="event.stopPropagation();">🔗 Meet</a>`;
       }
