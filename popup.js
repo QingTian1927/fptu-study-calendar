@@ -185,6 +185,7 @@ async function initPopup() {
   
   // Set help content localization
   document.getElementById('helpTitle').textContent = getMessage('helpTitle');
+  document.getElementById('helpTipsNotice').textContent = getMessage('helpTipsNotice');
   document.getElementById('helpSectionGettingStarted').textContent = getMessage('helpSectionGettingStarted');
   document.getElementById('helpStep1').textContent = getMessage('helpStep1');
   document.getElementById('helpStep2').textContent = getMessage('helpStep2');
@@ -200,6 +201,7 @@ async function initPopup() {
   document.getElementById('helpTip2').textContent = getMessage('helpTip2');
   document.getElementById('helpTip3').textContent = getMessage('helpTip3');
   document.getElementById('helpTip4').textContent = getMessage('helpTip4');
+  document.getElementById('helpTip5').innerHTML = getMessage('helpTip5');
   document.getElementById('helpSectionTroubleshooting').textContent = getMessage('helpSectionTroubleshooting');
   // Use innerHTML for items with HTML formatting
   document.getElementById('helpTrouble1').innerHTML = getMessage('helpTrouble1');

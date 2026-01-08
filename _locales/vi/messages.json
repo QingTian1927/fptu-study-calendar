@@ -475,6 +475,14 @@
     "message": "File .ics có thể được import vào hầu hết các ứng dụng lịch phổ biến",
     "description": "Mẹo 4 trong hướng dẫn"
   },
+  "helpTipsNotice": {
+    "message": "Hãy cuộn xuống để xem các mẹo sử dụng quan trọng giúp bạn tránh các vấn đề phổ biến.",
+    "description": "Thông báo nhắc người dùng đọc phần mẹo sử dụng"
+  },
+  "helpTip5": {
+    "message": "<strong>💡 Mẹo quan trọng:</strong> Tạo một lịch riêng biệt (ví dụ: 'FPTU Schedule') trong ứng dụng lịch của bạn để lưu trữ các lớp học được xuất. Vì lịch học trên FAP thay đổi thường xuyên, việc nhập lại dữ liệu có thể tạo ra sự kiện trùng lặp.",
+    "description": "Mẹo 5 trong hướng dẫn - Khuyến nghị tạo lịch riêng biệt để tránh trùng lặp"
+  },
   "helpSectionTroubleshooting": {
     "message": "Khắc phục sự cố",
     "description": "Tiêu đề phần khắc phục sự cố trong hướng dẫn"
